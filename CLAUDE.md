@@ -53,6 +53,35 @@ powershell -ExecutionPolicy Bypass -File level-theme\tools\craft-build.ps1 -Stag
 powershell -ExecutionPolicy Bypass -File level-theme\tools\craft-build.ps1 -Stage compile
 # compilação completa OK em 2026-11-11 (~11 min, 949 etapas, 8 núcleos): C:\_\d93c962e\build\bin\leveldrive.exe
 # (ProductName "Level Drive", CompanyName "Level Tecnologia", ícone Level; DLLs leveldrivesync*.dll)
+```
+
+## Build Release + MSI (Fase 6): passo a passo que funcionou (2026-11-12)
+```powershell
+cd C:\suporte\level-desktop
+# 0. (uma vez por máquina) ambiente da Fase 0 + bootstrap do Craft
+powershell -ExecutionPolicy Bypass -File level-theme\tools\craft-bootstrap.ps1
+# 1. tema
+powershell -ExecutionPolicy Bypass -File level-theme\tools\apply-theme.ps1
+# 2. build Release + install + qmerge + pacote portátil do Craft (~15 min do zero; incremental ~3 min)
+powershell -ExecutionPolicy Bypass -File level-theme\tools\craft-build.ps1 -Stage "configure,compile,install,qmerge,package" -BuildType Release
+#    -> pasta do app em C:\CraftRoot\windows-msvc2022_64-cl\build\nextcloud-client\archive
+# 3. MSI (monta o HarvestAppDir plano, roda o make-msi.bat do upstream, confere erros do WiX)
+powershell -ExecutionPolicy Bypass -File level-theme\tools\build-msi.ps1          # sem assinatura
+powershell -ExecutionPolicy Bypass -File level-theme\tools\build-msi.ps1 -Sign    # quando houver certificado
+#    -> level-theme\build\out\LevelDrive-35.0.3.0-x64.msi (71,9 MB; en-us + transforms de/fr/it/es/pt-br)
+# 4. voltar a árvore upstream antes de commitar
+powershell -ExecutionPolicy Bypass -File level-theme\tools\apply-theme.ps1 -Revert
+```
+Detalhes do MSI:
+- O `level-theme\craft\level-overrides.ini` (via `--config-override`) troca o pacote NSIS do blueprint pelo `PortablePackager`.
+- O MSI usa o `make-msi.bat`, o `.wxs` e o `OEM.wxi` gerados pelo próprio CMake (`BUILD_WIN_MSI=ON`).
+- O layout é plano: o conteúdo de `archive\bin\*` vai para a raiz, mais os exes, `i18n\` (incluindo as traduções do Qt em pt-BR), `sync-exclude.lst`, `openssl.cnf` e `LevelDrive.ico`.
+- Conferido sem instalar (tabelas do MSI e transform pt-BR aplicado numa cópia):
+  - ProductName "Level Drive", Manufacturer "Level Tecnologia", UpgradeCode Level, INSTALLDIR "Level Drive";
+  - 2043 arquivos, nenhum com "nextcloud" no nome;
+  - registro `Software\Classes\leveldrive`;
+  - textos pt-BR ("Abrir o Level Drive", "Atalho no Menu Iniciar"…).
+- Assinatura: `level-theme\tools\sign-level.ps1`. **Preparada, não executada**, com placeholders para certificado, carimbo de tempo e URL. A senha vem da variável `LEVEL_SIGN_PASSWORD` e nunca fica no repositório.
 powershell -ExecutionPolicy Bypass -File level-theme\tools\apply-theme.ps1 -Revert
 ```
 
@@ -123,6 +152,14 @@ powershell -ExecutionPolicy Bypass -File level-theme\tools\apply-theme.ps1 -Reve
 - **`.rc` das extensões de shell:** `NCContextMenu.rc`, `NCOverlay.rc` e `NCUtil.rc` são UTF-16LE com BOM e estão marcados como binários (`-text`). Edite decodificando e recodificando em UTF-16LE. O patch deve sair com `git diff --binary` (0009).
 - **Buscar texto em `.qm`:** o `.qm` é UTF-16BE e as strings podem começar em offset ímpar. Uma busca de bytes com uma só alinhamento dá falso negativo; teste os dois alinhamentos.
 - **Edições literais em fontes upstream:** use um script que exige exatamente 1 ocorrência e preserva BOM e EOL (padrão usado na Fase 5), em vez de ferramentas que normalizam o arquivo.
+- **Bug no blueprint externo:** o `craft-blueprints-nextcloud` (stable-35.0) `nextcloud-client.py:85` usa `os.path` sem `import os`, e o `craft --package` dá `NameError`. O `craft-build.ps1` acrescenta o import só durante o package e restaura o arquivo com `git checkout`.
+- **Blacklist do blueprint:** `bin/(?!(nextcloud|nextcloudcmd|QtWebEngineProcess)).*\.exe` **remove o `leveldrive.exe` e o `leveldrivecmd.exe` do pacote**. O `build-msi.ps1` copia os dois do `C:\CraftRoot\windows-msvc2022_64-cl\bin`. O blacklist também remove `translations/` (traduções do Qt), e o `build-msi.ps1` copia as do pt-BR para `i18n\`.
+- **`--options` do Craft:** é um valor por `--options`. Um segundo valor solto vira nome de pacote ("Craft was unable to find nextcloud-client.buildType=Release").
+- **Arrays com `powershell -File`:** `-Stage a,b` chega como string única. O `craft-build.ps1` recebe texto e separa por vírgula.
+- **`NoDefaultCurrentDirectoryInExePath=1`:** está definido neste ambiente. O `cmd` não executa `.bat`/`.cmd` da pasta atual pelo nome; usar caminho completo. `Push-Location` também não muda o diretório do processo filho; usar `Start-Process -WorkingDirectory`.
+- **`light` do WiX v3:** junta todos os `-loc` cujas culturas casam. Passe um `.wxl` por link, senão dá `LGHT0100` (ver patch 0011).
+- **`make-msi.bat` do upstream:** não para em erro dentro dos laços e termina com "Done". Sempre conferir o log (o `build-msi.ps1` faz isso).
+- **Ler tabelas de MSI:** no PowerShell 5.1, o COM do Windows Installer exige índices `[int]`. É mais simples usar `msilib` do Python 3.12 ou VBScript (`cscript`). `Key` é palavra reservada no SQL do MSI e vai entre crases.
 - **Hook de pre-commit:** o configure instala um hook de pre-commit do KDE (`CMakeLists.txt:101`, clang-format). Para commitar, coloque `C:\CraftRoot\windows-msvc2022_64-cl\bin` **no fim** do PATH (traz o `git-clang-format`). Não usar `--no-verify`. O hook só atua em `.cpp`/`.h` staged. Como os patches da Level são arquivos `.patch` e o código upstream nunca é commitado, ele não bloqueia. Ressalva: o clang-format do Craft (LLVM 20) não entende `EnumTrailingComma` do `.clang-format` da v35 (precisa do clang-format 21+). Por isso não dá para checar a formatação dos patches localmente.
 - **`.ico`:** só é gerado na compilação (`ecm_add_app_icon`), não no configure.
 - **`APPLICATION_WIZARD_USE_CUSTOM_LOGO`:** não desligar. O ramo `#else` tem erro de sintaxe (`theme.cpp:853`).
@@ -135,7 +172,11 @@ Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<
 - `<<PREENCHER: URL do servidor de atualização>>` (futuro; o updater está desligado).
 - `<<PREENCHER: site/suporte da Level>>`. `APPLICATION_HELP_URL` está provisoriamente em `https://leveltecnologia.com.br/`.
 - `<<PREENCHER: URL de homologação>>` (Fase 7).
-- `<<PREENCHER: certificado de assinatura de código>>` (Fase 6).
+- `<<PREENCHER: certificado de assinatura de código>>`, em `level-theme/tools/sign-level.ps1`:
+  - `.pfx` ou thumbprint/token;
+  - URL de carimbo de tempo RFC 3161 da CA;
+  - URL de descrição.
+  - Senha via `LEVEL_SIGN_PASSWORD`.
 - `<<PREENCHER: URL pública do código-fonte do fork>>` (GPL; usada no "Sobre", Fase 5).
 - `<<PREENCHER: confirmar cores dos indicadores de estado>>`: erro #C8423B/#E0645C, aviso #E0A526, pausa/offline #5B5C5C/#B6B6B6 (`build-icons.ps1`).
 - **Pendente da Fase 5/6:** o MSI do upstream só tem transforms en/de/fr/it/es. Incluir pt-BR.
@@ -158,4 +199,5 @@ Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<
 | 3 Ícones e imagens | Concluída (2026-11-11): build-icons.ps1, overlay (38 arquivos), patch 0003, configure completo OK |
 | 4 Cores e fontes | Concluída (2026-11-11): patches 0004–0006, contraste 44/44, compilação completa OK |
 | 5 Textos e localização | Concluída (2026-11-11): patches 0007–0010 + 0003 estendido, pt-BR, créditos GPL, compilação OK (ver `level-theme/docs/fase5-textos.md`) |
-| 6–7 | Não iniciadas |
+| 6 Build e instalador | Concluída (2026-11-12): Release via Craft, patch 0011, `build-msi.ps1` → `LevelDrive-35.0.3.0-x64.msi` com pt-BR; assinatura preparada (`sign-level.ps1`), não executada |
+| 7 Validação | Não iniciada |

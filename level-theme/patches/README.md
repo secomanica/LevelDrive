@@ -116,6 +116,22 @@ Para gerar ou atualizar um patch:
   - Gerado com `git diff --binary`. Para regenerar, edite preservando o UTF-16LE com BOM.
   - Patch binário só aplica sobre o blob exato. Se o upstream mudar esses `.rc`, refaça o patch.
 
+## 0011-msi-pt-br-strings-and-filename.patch
+- **Arquivos:**
+  - `admin/win/msi/Nextcloud.wxs`, `make-msi.bat.in`, `CMakeLists.txt`;
+  - arquivos **novos**: `admin/win/msi/level-strings.en-us.wxl` e `level-strings.pt-br.wxl`.
+- **Mudanças:**
+  - `Nextcloud.wxs`: os 8 textos fixos em inglês passam para `!(loc.Level*)`, com tradução em `.wxl`. São o checkbox "Launch", 3 recursos, a descrição e 3 ProgressText.
+  - `make-msi.bat.in`:
+    - inclui `pt-br` (codepage 1252, LCID 1046) na lista de idiomas e transforms;
+    - passa ao `light` **exatamente um** `.wxl` por idioma: o do idioma, se existir; senão, o en-us. O en-us é lincado com `-cultures:en-us`.
+  - `CMakeLists.txt` (msi):
+    - instala os `.wxl` em `msi/`;
+    - **corrige o defeito do upstream** do nome com hífen duplo (`LevelDrive-35.0.3.0--x64.msi`) quando `MIRALL_VERSION_SUFFIX` está definido mas vazio, que é o caso do blueprint do Craft.
+- **Armadilha:** o `light` do WiX v3 junta numa só tabela todos os `-loc` que casam com a lista de culturas. Dois `.wxl` (ou `en-us;en-us`) geram `LGHT0100 duplicated identifier`.
+- **Defeito do upstream (não corrigido, contornado):** o `make-msi.bat` não para quando `light`/`torch` falham dentro dos laços (`%ERRORLEVEL%` é expandido antes) e termina com "Done". O `build-msi.ps1` confere o log e falha se houver erro do WiX.
+- **Outros idiomas:** de/fr/it/es usam o WixUI traduzido do próprio WiX e as strings Level em inglês.
+
 ## 0010-pt-br-translations.patch
 - **Arquivo:** `translations/client_pt_BR.ts`.
 - **Mudanças:**

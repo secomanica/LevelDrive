@@ -13,7 +13,11 @@ level-theme/
     build-icons.ps1      gera overlay/ a partir de ..\level-brand\ (confere os hashes do SOURCE.md antes)
     apply-theme.ps1      aplica (-Check verifica, -Revert desfaz)
     craft-bootstrap.ps1  prepara o KDE Craft (dependências do build)
-    craft-build.ps1      roda uma etapa do Craft sobre este repo (-Stage configure|compile|install|all)
+    craft-build.ps1      roda etapas do Craft sobre este repo (-Stage "configure,compile,install,qmerge,package")
+    build-msi.ps1        monta a pasta do app e gera o MSI (make-msi.bat do upstream); -Sign assina
+    sign-level.ps1       assinatura Authenticode (preparada; requer certificado <<PREENCHER>>)
+    check-contrast.py    confere o contraste WCAG dos pares de cor do tema
+  craft/level-overrides.ini  override do craftmaster.ini (pacote portátil em vez de NSIS)
   docs/                  análises (mapa do branding, inventário de "Nextcloud")
 ```
 

@@ -77,6 +77,15 @@ if ($Revert) {
     }
     Get-StalePngs | ForEach-Object { Remove-Item $_ -Force }
     $touched = $touched | Sort-Object -Unique
+    # arquivos criados por patches (não existem no upstream): apagar em vez de git checkout
+    $touched = @($touched | Where-Object {
+        & git -C $repo ls-files --error-unmatch -- $_ *> $null
+        if ($LASTEXITCODE -eq 0) { $true } else {
+            $t = Join-Path $repo $_
+            if (Test-Path $t) { Remove-Item $t -Force; Write-Host "  removido $_" }
+            $false
+        }
+    })
     & git -C $repo checkout -- @touched
     if ($LASTEXITCODE -ne 0) { throw 'git checkout falhou' }
     $touched | ForEach-Object { Write-Host "  restaurado $_" }
