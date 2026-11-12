@@ -70,8 +70,9 @@ Instalação silenciosa: `msiexec /i LevelDrive-<versão>-x64.msi /qn`. As propr
    - confira se o defeito de idioma do 0012 foi corrigido no upstream;
    - confira se o blueprint do Craft ainda tem os dois defeitos contornados no `craft-build.ps1` e no `build-msi.ps1` (veja Armadilhas no `CLAUDE.md`).
 7. **Traduções:** strings novas ou alteradas pelos patches precisam de entrada em `client_pt_BR.ts` (patch 0010).
-8. **Valide** com o checklist de `level-theme/docs/fase7-validacao.md`.
-9. **Nunca mude**:
+8. **Remova de novo o `.github/dependabot.yml`** que vem do upstream (`git rm .github/dependabot.yml`). Ele abre PRs de atualização das Actions do Nextcloud no repositório da Level.
+9. **Valide** com o checklist de `level-theme/docs/fase7-validacao.md`.
+10. **Nunca mude**:
    - o `UpgradeCode` do MSI nem os GUIDs de `level-theme/NEXTCLOUD.cmake`, porque a atualização sobre a versão anterior e a convivência com o Nextcloud dependem deles;
    - o `SHORTNAME`, o `APPLICATION_REV_DOMAIN` nem o esquema `leveldrive://`, depois do primeiro release.
 
@@ -84,7 +85,7 @@ Para trocar logos, atualize `..\level-brand\` com os hashes do `SOURCE.md` e rod
 | Confirmar nomes exibidos dos servidores ("Level Drive", "Level Drive 2", "Level Drive 3") | `level-theme/NEXTCLOUD.cmake` (`APPLICATION_SERVER_URL`) | É o que o usuário vê na lista. As URLs já estão definidas. |
 | Assinatura de código: instalar o **SSL.com eSigner CKA** na máquina de build e definir `LEVEL_SIGN_THUMBPRINT` | `level-theme/tools/sign-level.ps1` (carimbo `http://ts.ssl.com`) | Sem assinatura, o Windows SmartScreen alerta na instalação. `build-msi.ps1 -Sign` assina os `.exe`/`.dll` (todos, ou só os da Level com `-SignScope Level`) e o `.msi`. |
 | URL do servidor de atualização | `APPLICATION_UPDATE_URL` + `BUILD_UPDATER ON` | O updater está desligado até existir o servidor. |
-| Usuário de teste num servidor Level | validação | Testar login, sincronização, menu de contexto, overlays e arquivos virtuais. |
+| Testes restantes com conta | validação | Login, sincronização, painel de navegação e arquivos virtuais já confirmados em leveldrive.com.br. Faltam o menu de contexto do Explorer e o login em drv2/drv3. |
 | Confirmar cores dos indicadores de estado (erro `#C8423B`/`#E0645C`, aviso `#E0A526`, pausa `#5B5C5C`/`#B6B6B6`) | `level-theme/tools/build-icons.ps1` | Cores propostas, fora da paleta oficial. |
 | Testar em Windows 10 e 11 reais, com escala 150%/200% e barra clara | validação | O Server 2019 não cobre isso. |
 

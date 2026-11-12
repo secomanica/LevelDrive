@@ -180,13 +180,15 @@ Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<
 - `<<PREENCHER: URL do servidor de atualização>>` (futuro; o updater está desligado).
 - Ajuda: `APPLICATION_HELP_URL` = `https://leveltecnologia.com.br/`, o site da empresa (decisão de 2026-11-12). É aberto pelo menu "Ajuda" (`owncloudgui.cpp:774`) e por Configurações > Info (`infosettings.cpp:66`).
   - `Theme::conflictHelpUrl()` (`<help>/conflicts.html`, `theme.cpp:504`) existe, mas **nenhuma tela o usa em v35** (conferido com grep em cpp/qml/ui), então não há 404. Conferir de novo ao atualizar a versão do upstream.
-- `<<PREENCHER: usuário de teste num servidor Level>>`: login, sincronização, menu de contexto, overlays e arquivos virtuais ainda não foram testados (Fase 7).
+- Login e sincronização: confirmados pelo usuário em `leveldrive.com.br` (painel de navegação, arquivos virtuais, bandeja). Faltam o menu de contexto do Explorer e os servidores drv2/drv3.
 - `<<PREENCHER: LEVEL_SIGN_THUMBPRINT>>`: instalar o SSL.com eSigner CKA nesta máquina, logar e anotar a impressão digital do certificado. Depois, primeiro build assinado e teste da assinatura (`signtool verify /pa`). Decidir o escopo (All ou Level) conforme a cota do plano.
 - `<<PREENCHER: confirmar cores dos indicadores de estado>>`: erro #C8423B/#E0645C, aviso #E0A526, pausa/offline #5B5C5C/#B6B6B6 (`build-icons.ps1`).
 - **Repositório público (GPL), definido em 2026-11-12:** https://github.com/secomanica/LevelDrive (remote `level`; branches `main` e `level/branding`, mesmo commit). `APPLICATION_SOURCE_URL` aponta para ele: o "Sobre" mostra "Código-fonte: <url>" e a revisão Git aponta para `<url>/commit/<sha>`. Por isso **todo commit usado num build distribuído precisa estar enviado (push)**.
   - Licença: GPLv2 (`COPYING` do upstream). O `LICENSE` GPLv3 que o GitHub criou no commit inicial foi removido no merge `bdc2dd5879`.
   - Envio: o ambiente das ferramentas do Claude tem `GCM_INTERACTIVE=never`. O primeiro login foi feito numa janela PowerShell separada, com token clássico (`repo` + `workflow`). O token fica salvo no Gerenciador de Credenciais do Windows. O escopo `workflow` é obrigatório porque o upstream tem `.github/workflows/`.
-  - Efeito colateral: as GitHub Actions e o Dependabot do upstream disparam no repositório (93 execuções e 4 PRs no 1º envio). Desligar Actions nas configurações do repositório.
+  - Efeito colateral: as GitHub Actions e o Dependabot do upstream disparam no repositório (93 execuções e 4 PRs no 1º envio).
+    - Actions: desligar nas configurações do repositório (Settings → Actions → Disable actions). Isso fica com o usuário, porque o token não tem permissão de administração.
+    - Dependabot: o `.github/dependabot.yml` do upstream foi **removido** no commit `0dd9a5d8a7`, por decisão do usuário. É a única mudança da Level fora de `level-theme/` na árvore commitada. **Ao atualizar o upstream, remova de novo** (`git rm .github/dependabot.yml`).
 - **Outros idiomas:** 2 textos alterados e 3 novos ficam em inglês fora do pt-BR até serem traduzidos.
 - **Validar numa estação Windows 10/11 real** (o Server 2019 não cobre):
   - se o estilo FluentWinUI3 (Win11) respeita a fonte Aptos nos controles QML;
