@@ -32,9 +32,10 @@ set( APPLICATION_VENDOR     "Level Tecnologia" )
 # usa a macro direto); host "." faz Updater::updateUrl() devolver URL inválida (updater.cpp:56).
 # <<PREENCHER: URL do servidor de atualização da Level>> quando existir, e religar BUILD_UPDATER.
 set( APPLICATION_UPDATE_URL "https://./" CACHE STRING "URL for updater" )
-# URL pública do código-fonte deste fork (exigência da GPL). Vazio = o "Sobre" mostra o crédito sem link
-# e a revisão Git aparece sem link (patch 0007). <<PREENCHER: URL pública do repositório do fork Level Drive>>
-set( APPLICATION_SOURCE_URL "" CACHE STRING "Public URL of this client's source code (GPL)" )
+# URL pública do código-fonte deste fork (exigência da GPL), definida pelo usuário em 2026-11-12.
+# O "Sobre" mostra "Código-fonte: <url>" e a revisão Git aponta para <url>/commit/<sha> (patch 0007).
+# Variável normal (não CACHE): um CMakeCache.txt antigo com valor vazio não pode vencer.
+set( APPLICATION_SOURCE_URL "https://github.com/secomanica/LevelDrive" )
 # Não pode ficar vazio: vazio vira fallback para docs.nextcloud.com (theme.cpp:495-499).
 # Variável normal (não CACHE), para um CMakeCache.txt antigo não manter o valor anterior.
 set( APPLICATION_HELP_URL   "https://leveltecnologia.com.br/" )  # site da empresa (usuário, 2026-11-12)
