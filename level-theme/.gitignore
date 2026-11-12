@@ -1,2 +1,5 @@
 # intermediários de build-icons.ps1 (prévias, PNG temporários dos BMP)
 /build/
+
+# o .gitignore raiz do upstream ignora 'build*' (linha 17): reincluir os scripts da Level
+!/tools/build-*.ps1
