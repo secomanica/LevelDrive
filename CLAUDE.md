@@ -49,6 +49,7 @@ powershell -ExecutionPolicy Bypass -File level-theme\tools\craft-bootstrap.ps1
 - **winget:** não existe no Windows Server 2019. Usar os instaladores oficiais.
 - **VS Build Tools e MSI simultâneos:** instalar os VS Build Tools ao mesmo tempo que outro MSI dá exit code 1618. Instalar um de cada vez.
 - **vswhere no PATH:** o `vcvarsall.bat` precisa do `vswhere.exe` no PATH (`C:\Program Files (x86)\Microsoft Visual Studio\Installer`). Sem isso, o Craft quebra com `JSONDecodeError` em `CraftSetupHelper.getMSVCEnv`. O script de bootstrap corrige isso só para o processo.
+- **`core.autocrlf`:** não mudar depois do clone. O padrão do Git para Windows é `true`, igual ao CI do upstream, e os `.bat` do MSI precisam de CRLF. Forçar `false` marcou 401 arquivos como modificados (só finais de linha).
 - **`Start-Process -Command` com `*>`:** não gerou log. Usar `-File` com `-RedirectStandardOutput`.
 - **`#cmakedefine` vazio:** variável vazia vira macro indefinida.
   - `APPLICATION_HELP_URL` vazio volta para docs.nextcloud.com.
