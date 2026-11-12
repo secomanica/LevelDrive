@@ -105,7 +105,7 @@ powershell -ExecutionPolicy Bypass -File level-theme\tools\apply-theme.ps1 -Reve
 - **Variável `WIX`:** sessões abertas antes da instalação do WiX não têm a variável. O `NCMsiHelper` falha no configure. O `craft-build.ps1` relê a variável do sistema.
 - **ImageMagick `-splice` com `-gravity center/south`:** insere o espaçamento no meio da imagem. Isso só afetou a folha de prévia, não os ícones.
 - **PNGs do upstream:** o configure gera PNGs também para `theme/*/nextcloud/state-*.svg` do upstream. Eles são ignorados pelo `.gitignore` e inofensivos.
-- **Hook de pre-commit:** o configure instala um hook de pre-commit do KDE (`CMakeLists.txt:101`, clang-format). Para commitar, coloque `C:\CraftRoot\windows-msvc2022_64-cl\bin` **no fim** do PATH (traz o `git-clang-format`). Não usar `--no-verify`. Patches em `.cpp` devem estar formatados com o `.clang-format` do repo.
+- **Hook de pre-commit:** o configure instala um hook de pre-commit do KDE (`CMakeLists.txt:101`, clang-format). Para commitar, coloque `C:\CraftRoot\windows-msvc2022_64-cl\bin` **no fim** do PATH (traz o `git-clang-format`). Não usar `--no-verify`. O hook só atua em `.cpp`/`.h` staged. Como os patches da Level são arquivos `.patch` e o código upstream nunca é commitado, ele não bloqueia. Ressalva: o clang-format do Craft (LLVM 20) não entende `EnumTrailingComma` do `.clang-format` da v35 (precisa do clang-format 21+). Por isso não dá para checar a formatação dos patches localmente.
 - **`.ico`:** só é gerado na compilação (`ecm_add_app_icon`), não no configure.
 - **`APPLICATION_WIZARD_USE_CUSTOM_LOGO`:** não desligar. O ramo `#else` tem erro de sintaxe (`theme.cpp:853`).
 
