@@ -77,6 +77,15 @@ powershell -ExecutionPolicy Bypass -File level-theme\tools\apply-theme.ps1 -Reve
 - **Ícones:** gerados por `build-icons.ps1`. Os `<path>` dos SVGs oficiais são copiados verbatim, sem recolorir, e só posicionados com `transform`. A saída é SVG Tiny, compatível com o QSvgRenderer. O `wizard_logo.svg` é a cópia byte a byte do horizontal `-cor-negativo`.
   - Estados = símbolo + indicador circular.
   - Vermelho, âmbar e cinza dos indicadores aguardam confirmação da Level.
+- **Interface (Fase 4):**
+  - Tokens Level no `Style.qml` (patch 0004).
+  - Texto `#103B40` sobre o verde, nunca branco (patch 0005).
+  - Fonte Aptos → Segoe UI → Arial pelo nome de família, sem empacotar arquivo de fonte (patch 0006).
+  - Serifa Century Schoolbook → Georgia só no título "Log in to %1".
+  - Links `#103B40`/`#53AE93`.
+  - Contraste: `C:\Python312-x64\python.exe -I level-theme\tools\check-contrast.py` (44/44).
+  - Mantido do servidor: `accentColor` e as cores de cabeçalho vêm do app Theming do servidor. Configurar `#103B40` nos servidores Level.
+  - Mantido do Windows: a cor de destaque nativa (checkboxes) nos Widgets do Win11.
 - **Prévia visual:** https://claude.ai/artifact/7x2iwcghTs3Nz3xECbQsPz (privada).
 - **Cores CMake:**
   - fundo/cabeçalho do assistente `#103B40`;
@@ -105,6 +114,9 @@ powershell -ExecutionPolicy Bypass -File level-theme\tools\apply-theme.ps1 -Reve
 - **Variável `WIX`:** sessões abertas antes da instalação do WiX não têm a variável. O `NCMsiHelper` falha no configure. O `craft-build.ps1` relê a variável do sistema.
 - **ImageMagick `-splice` com `-gravity center/south`:** insere o espaçamento no meio da imagem. Isso só afetou a folha de prévia, não os ícones.
 - **PNGs do upstream:** o configure gera PNGs também para `theme/*/nextcloud/state-*.svg` do upstream. Eles são ignorados pelo `.gitignore` e inofensivos.
+- **`Style.qml` com EOL misto:** o `theme/Style/Style.qml` upstream tem finais de linha MISTOS no índice (`git ls-files --eol` = `i/mixed`). Editar com ferramenta que normaliza EOL gera um patch do arquivo inteiro. Editar preservando o EOL por linha (script Python lendo bytes) e conferir com `git diff --stat`.
+- **`apply-theme -Check` testa patches isolados:** cada patch é checado contra o upstream sozinho. Patches que tocam o mesmo arquivo (0003 e 0006 no `theme.cpp`) só são validados de verdade aplicando em sequência (sem `-Check`).
+- **Python:** não está no PATH desta sessão. Usar `C:\Python312-x64\python.exe`.
 - **Hook de pre-commit:** o configure instala um hook de pre-commit do KDE (`CMakeLists.txt:101`, clang-format). Para commitar, coloque `C:\CraftRoot\windows-msvc2022_64-cl\bin` **no fim** do PATH (traz o `git-clang-format`). Não usar `--no-verify`. O hook só atua em `.cpp`/`.h` staged. Como os patches da Level são arquivos `.patch` e o código upstream nunca é commitado, ele não bloqueia. Ressalva: o clang-format do Craft (LLVM 20) não entende `EnumTrailingComma` do `.clang-format` da v35 (precisa do clang-format 21+). Por isso não dá para checar a formatação dos patches localmente.
 - **`.ico`:** só é gerado na compilação (`ecm_add_app_icon`), não no configure.
 - **`APPLICATION_WIZARD_USE_CUSTOM_LOGO`:** não desligar. O ramo `#else` tem erro de sintaxe (`theme.cpp:853`).
@@ -121,7 +133,13 @@ Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<
 - `<<PREENCHER: URL pública do código-fonte do fork>>` (GPL; usada no "Sobre", Fase 5).
 - `<<PREENCHER: confirmar cores dos indicadores de estado>>`: erro #C8423B/#E0645C, aviso #E0A526, pausa/offline #5B5C5C/#B6B6B6 (`build-icons.ps1`).
 - **Pendente da Fase 5/6:** o MSI do upstream só tem transforms en/de/fr/it/es. Incluir pt-BR.
-- **Pendente da Fase 4/5:** a opção "ícones monocromáticos" fica sem efeito no Windows (patch 0003). Avaliar escondê-la.
+- **Pendente da Fase 5:** a opção "ícones monocromáticos" fica sem efeito no Windows (patch 0003). Avaliar escondê-la.
+- **Validar na Fase 7, com o app rodando:**
+  - se o estilo FluentWinUI3 (Win11) respeita a fonte da aplicação nos controles QML;
+  - a serifa no título;
+  - as cores nos temas claro e escuro do Windows 10 e 11.
+- **Opcional:** aplicar a cor de destaque Level à paleta global (checkboxes e realces nativos dos Widgets).
+- **Servidores Level:** configurar o app Theming (cor primária `#103B40`), porque o cliente usa essa cor em atividades e cabeçalhos.
 
 ## Status das fases
 | Fase | Status |

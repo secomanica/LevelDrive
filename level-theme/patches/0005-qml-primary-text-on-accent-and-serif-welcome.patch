@@ -1,0 +1,96 @@
+diff --git a/src/gui/assistant/qml/AssistantMessageDelegate.qml b/src/gui/assistant/qml/AssistantMessageDelegate.qml
+index 308179f493..4efea7cc64 100644
+--- a/src/gui/assistant/qml/AssistantMessageDelegate.qml
++++ b/src/gui/assistant/qml/AssistantMessageDelegate.qml
+@@ -54,7 +54,7 @@ Item {
+             wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+             color: root.isAssistantMessage
+                 ? Style.wizardPrimaryText
+-                : Style.wizardSelectedText
++                : Style.wizardPrimaryButtonText
+             selectedTextColor: Style.wizardSelectedText
+             selectionColor: Style.ncBlue
+             textFormat: Text.MarkdownText
+@@ -74,7 +74,7 @@ Item {
+             text: root.dateText
+             color: root.isAssistantMessage
+                 ? Style.wizardSecondaryText
+-                : Style.wizardSelectedText
++                : Style.wizardPrimaryButtonText
+             font.pixelSize: Style.pixelSize
+             elide: Text.ElideRight
+         }
+diff --git a/src/gui/search/UnifiedSearchFilterBar.qml b/src/gui/search/UnifiedSearchFilterBar.qml
+index 2890043ac5..9df6a477b4 100644
+--- a/src/gui/search/UnifiedSearchFilterBar.qml
++++ b/src/gui/search/UnifiedSearchFilterBar.qml
+@@ -50,10 +50,10 @@ Flow {
+         //: Search filter for selecting a result provider type.
+         text: qsTr("Type")
+         trailingIconSource: "image://svgimage-custom-color/caret-down.svg/"
+-            + (primary ? Style.wizardSelectedText : Style.wizardPrimaryText)
++            + (primary ? Style.wizardPrimaryButtonText : Style.wizardPrimaryText)
+         iconBeforeText: true
+         iconSource: "image://svgimage-custom-color/folder.svg/"
+-            + (primary ? Style.wizardSelectedText : Style.wizardPrimaryText)
++            + (primary ? Style.wizardPrimaryButtonText : Style.wizardPrimaryText)
+         primary: root.hasActiveFilter("provider")
+         Accessible.name: qsTr("Filter by type")
+         onClicked: typeMenu.toggle()
+@@ -102,10 +102,10 @@ Flow {
+         //: Search filter for restricting results by date.
+         text: qsTr("Date")
+         trailingIconSource: "image://svgimage-custom-color/caret-down.svg/"
+-            + (primary ? Style.wizardSelectedText : Style.wizardPrimaryText)
++            + (primary ? Style.wizardPrimaryButtonText : Style.wizardPrimaryText)
+         iconBeforeText: true
+         iconSource: "image://svgimage-custom-color/calendar.svg/"
+-            + (primary ? Style.wizardSelectedText : Style.wizardPrimaryText)
++            + (primary ? Style.wizardPrimaryButtonText : Style.wizardPrimaryText)
+         primary: root.hasActiveFilter("date")
+         enabled: root.searchModel && root.searchModel.dateFilterAvailable
+         Accessible.name: qsTr("Filter by date")
+@@ -159,10 +159,10 @@ Flow {
+         //: Search filter for restricting results to a person.
+         text: qsTr("People")
+         trailingIconSource: "image://svgimage-custom-color/caret-down.svg/"
+-            + (primary ? Style.wizardSelectedText : Style.wizardPrimaryText)
++            + (primary ? Style.wizardPrimaryButtonText : Style.wizardPrimaryText)
+         iconBeforeText: true
+         iconSource: "image://svgimage-custom-color/account-group.svg/"
+-            + (primary ? Style.wizardSelectedText : Style.wizardPrimaryText)
++            + (primary ? Style.wizardPrimaryButtonText : Style.wizardPrimaryText)
+         primary: root.hasActiveFilter("person")
+         enabled: root.searchModel && root.searchModel.peopleFilterAvailable
+         Accessible.name: qsTr("Filter by person")
+diff --git a/src/gui/wizard/qml/ServerPage.qml b/src/gui/wizard/qml/ServerPage.qml
+index 06a55798d1..56464fdfc2 100644
+--- a/src/gui/wizard/qml/ServerPage.qml
++++ b/src/gui/wizard/qml/ServerPage.qml
+@@ -27,9 +27,10 @@ Item {
+ 
+         EnforcedPlainTextLabel {
+             text: qsTr("Log in to %1").arg(root.controller.appName)
+-            color: root.primaryTextColor
+-            font.pixelSize: Style.pixelSize + 8
+-            font.bold: true
++            // Level: welcome title uses the brand serif and heading colour
++            color: Style.levelInkHeading
++            font.family: Style.levelSerifFamily
++            font.pixelSize: Style.pixelSize + 10
+             Layout.fillWidth: true
+             wrapMode: Text.WordWrap
+         }
+diff --git a/src/gui/wizard/qml/WizardButton.qml b/src/gui/wizard/qml/WizardButton.qml
+index 5dcb572235..826f999f46 100644
+--- a/src/gui/wizard/qml/WizardButton.qml
++++ b/src/gui/wizard/qml/WizardButton.qml
+@@ -82,7 +82,7 @@ BasicControls.Button {
+                     return Style.wizardDisabledText
+                 }
+                 if (root.primary) {
+-                    return Style.wizardSelectedText
++                    return Style.wizardPrimaryButtonText
+                 }
+                 return root.palette.buttonText
+             }

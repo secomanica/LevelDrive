@@ -1,0 +1,58 @@
+diff --git a/src/gui/main.cpp b/src/gui/main.cpp
+index 3eb51d0b7f..09e6747e00 100644
+--- a/src/gui/main.cpp
++++ b/src/gui/main.cpp
+@@ -108,6 +108,14 @@ static int runApplication(int argc, char **argv)
+         QApplication::setStyle(QStyleFactory::create(widgetsStyle));
+     }
+ 
++    // Level: brand font used by family name from the system (font files are never bundled).
++    // Aptos ships with Windows 11 / Microsoft 365; otherwise Segoe UI is used.
++    {
++        auto appFont = QApplication::font();
++        appFont.setFamilies({QStringLiteral("Aptos"), QStringLiteral("Segoe UI"), QStringLiteral("Arial")});
++        QApplication::setFont(appFont);
++    }
++
+ #ifndef Q_OS_WIN
+     signal(SIGPIPE, SIG_IGN);
+ #endif
+diff --git a/src/libsync/theme.cpp b/src/libsync/theme.cpp
+index 2dbc450913..a23c477869 100644
+--- a/src/libsync/theme.cpp
++++ b/src/libsync/theme.cpp
+@@ -435,16 +435,18 @@ Theme::Theme()
+     reserveDarkPalette.setColor(QPalette::Base, QColor(42, 42, 42));
+     reserveDarkPalette.setColor(QPalette::Window, QColor(53, 53, 53));
+     reserveDarkPalette.setColor(QPalette::Shadow, QColor(20, 20, 20));
+-    reserveDarkPalette.setColor(QPalette::Highlight, QColor(42, 130, 218));
+-    reserveDarkPalette.setColor(QPalette::HighlightedText, Qt::white);
+-    reserveDarkPalette.setColor(QPalette::Link, QColor(42, 130, 218));
+-    reserveDarkPalette.setColor(QPalette::LinkVisited, QColor(42, 130, 218));
++    // Level: brand colours for selection and links in the dark theme (contrast >= 4.5:1)
++    reserveDarkPalette.setColor(QPalette::Highlight, QColor(0x83, 0xC8, 0xB4));
++    reserveDarkPalette.setColor(QPalette::HighlightedText, QColor(0x10, 0x3B, 0x40));
++    reserveDarkPalette.setColor(QPalette::Link, QColor(0x53, 0xAE, 0x93));
++    reserveDarkPalette.setColor(QPalette::LinkVisited, QColor(0x53, 0xAE, 0x93));
+     reserveDarkPalette.setColor(QPalette::AlternateBase, QColor(66, 66, 66));
+     reserveDarkPalette.setColor(QPalette::NoRole, QColor(127, 127, 127));
+     reserveDarkPalette.setColor(QPalette::ToolTipBase, Qt::white);
+     reserveDarkPalette.setColor(QPalette::ToolTipText, QColor(53, 53, 53));
+-    reserveDarkPalette.setColor(QPalette::PlaceholderText, QColor(44, 44, 44));
+-    reserveDarkPalette.setColor(QPalette::Accent, QColor(127, 127, 200));
++    // Level: upstream (44,44,44) on Base (42,42,42) was invisible; ink-muted token instead
++    reserveDarkPalette.setColor(QPalette::PlaceholderText, QColor(0xB6, 0xB6, 0xB6));
++    reserveDarkPalette.setColor(QPalette::Accent, QColor(0x53, 0xAE, 0x93));
+ 
+     reserveDarkPalette.setColor(QPalette::Disabled, QPalette::Text, QColor(127, 127, 127));
+     reserveDarkPalette.setColor(QPalette::Disabled, QPalette::ButtonText,
+@@ -994,7 +996,8 @@ QColor Theme::settingsPanelColor(const QPalette &palette)
+ 
+ QColor Theme::getBackgroundAwareLinkColor(const QColor &backgroundColor)
+ {
+-    return {(isDarkColor(backgroundColor) ? QColor(0x6193dc) : QGuiApplication::palette().color(QPalette::Link))};
++    // Level: brand link colours (accent-ink token): #53AE93 on dark, #103B40 on light backgrounds
++    return {(isDarkColor(backgroundColor) ? QColor(0x53AE93) : QColor(0x103B40))};
+ }
+ 
+ QColor Theme::getBackgroundAwareLinkColor()
