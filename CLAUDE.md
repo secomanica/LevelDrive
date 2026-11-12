@@ -81,7 +81,7 @@ Detalhes do MSI:
   - 2043 arquivos, nenhum com "nextcloud" no nome;
   - registro `Software\Classes\leveldrive`;
   - textos pt-BR ("Abrir o Level Drive", "Atalho no Menu Iniciar"…).
-- Assinatura: `level-theme\tools\sign-level.ps1`. **Preparada, não executada**, com placeholders para certificado e carimbo de tempo. A senha vem da variável `LEVEL_SIGN_PASSWORD` e nunca fica no repositório.
+- Assinatura: `level-theme\tools\sign-level.ps1`. **Preparada, ainda não executada.** Falta instalar e logar o eSigner CKA e definir `LEVEL_SIGN_THUMBPRINT`. Nenhuma credencial fica no repositório.
   - **Certificado: SSL.com eSigner (nuvem)**, definido pelo usuário em 2026-11-12. Integração via **eSigner CKA** (Cloud Key Adapter), que expõe o certificado no repositório "Pessoal" do Windows, e `signtool /sha1 <thumbprint>`. Configuração fora do repositório: `LEVEL_SIGN_THUMBPRINT`. Carimbo de tempo: `http://ts.ssl.com`. Para build sem interação, o CKA fica em modo "Automated", com o segredo TOTP do eSigner configurado no próprio CKA.
   - Escopo: `build-msi.ps1 -Sign [-SignScope All|Level]`. **All** (padrão) assina ≈215 arquivos por build. **Level** assina ≈10: `leveldrive*.exe/.dll`, `NC*.dll`, `CfApiShellExtensions.dll`, `NCMsiHelper64.dll`. O `.msi` é sempre assinado. Use Level se o plano do eSigner tiver cota de assinaturas.
   - Armadilha corrigida: o `build-msi.ps1` chamava o `sign-level.ps1` com `powershell -File` e dois caminhos em `-Path`, que chegavam quebrados. Agora chama no mesmo processo.
@@ -181,11 +181,7 @@ Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<
 - Ajuda: `APPLICATION_HELP_URL` = `https://leveltecnologia.com.br/`, o site da empresa (decisão de 2026-11-12). É aberto pelo menu "Ajuda" (`owncloudgui.cpp:774`) e por Configurações > Info (`infosettings.cpp:66`).
   - `Theme::conflictHelpUrl()` (`<help>/conflicts.html`, `theme.cpp:504`) existe, mas **nenhuma tela o usa em v35** (conferido com grep em cpp/qml/ui), então não há 404. Conferir de novo ao atualizar a versão do upstream.
 - `<<PREENCHER: usuário de teste num servidor Level>>`: login, sincronização, menu de contexto, overlays e arquivos virtuais ainda não foram testados (Fase 7).
-- `<<PREENCHER: certificado de assinatura de código>>`, em `level-theme/tools/sign-level.ps1`:
-  - `.pfx` ou thumbprint/token;
-  - URL de carimbo de tempo RFC 3161 da CA;
-  - URL de descrição.
-  - Senha via `LEVEL_SIGN_PASSWORD`.
+- `<<PREENCHER: LEVEL_SIGN_THUMBPRINT>>`: instalar o SSL.com eSigner CKA nesta máquina, logar e anotar a impressão digital do certificado. Depois, primeiro build assinado e teste da assinatura (`signtool verify /pa`). Decidir o escopo (All ou Level) conforme a cota do plano.
 - `<<PREENCHER: confirmar cores dos indicadores de estado>>`: erro #C8423B/#E0645C, aviso #E0A526, pausa/offline #5B5C5C/#B6B6B6 (`build-icons.ps1`).
 - **Repositório público (GPL), definido em 2026-11-12:** https://github.com/secomanica/LevelDrive (remote `level`; branches `main` e `level/branding`, mesmo commit). `APPLICATION_SOURCE_URL` aponta para ele: o "Sobre" mostra "Código-fonte: <url>" e a revisão Git aponta para `<url>/commit/<sha>`. Por isso **todo commit usado num build distribuído precisa estar enviado (push)**.
   - Licença: GPLv2 (`COPYING` do upstream). O `LICENSE` GPLv3 que o GitHub criou no commit inicial foi removido no merge `bdc2dd5879`.
