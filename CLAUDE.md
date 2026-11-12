@@ -81,7 +81,8 @@ Detalhes do MSI:
   - 2043 arquivos, nenhum com "nextcloud" no nome;
   - registro `Software\Classes\leveldrive`;
   - textos pt-BR ("Abrir o Level Drive", "Atalho no Menu Iniciar"…).
-- Assinatura: `level-theme\tools\sign-level.ps1`. **Preparada, não executada**, com placeholders para certificado, carimbo de tempo e URL. A senha vem da variável `LEVEL_SIGN_PASSWORD` e nunca fica no repositório.
+- Assinatura: `level-theme\tools\sign-level.ps1`. **Preparada, não executada**, com placeholders para certificado e carimbo de tempo. A senha vem da variável `LEVEL_SIGN_PASSWORD` e nunca fica no repositório.
+  - **O que assinar** (revisto em 2026-11-12): todo `.exe`/`.dll` ainda sem assinatura válida, e não só os binários Level. O Nextcloud oficial assina os 129 do seu pacote. O pacote Level tem 202 sem assinatura (Qt, OpenSSL, KDE…) e 12 já assinados pela Microsoft (runtime VC++), que são mantidos. Também a `NCMsiHelper64.dll`, embutida no MSI, e por último o `.msi`, depois dos transforms.
 
 ## Decisões
 - **Nome do produto:** Level Drive. Vendor: Level Tecnologia.
@@ -93,7 +94,7 @@ Detalhes do MSI:
   - `tools/apply-theme.ps1` aplica tudo por cima da árvore upstream, que **não é commitada** com o tema.
 - **Nomes:**
   - Nome exibido: Level Drive.
-  - SHORTNAME `LevelDrive` e EXECUTABLE `leveldrive` (sugeridos, aguardando confirmação). Daí vêm o nome do MSI, `leveldrive.exe`, `leveldrive.cfg` e o pipe `\\.\pipe\leveldrive-<user>`.
+  - SHORTNAME `LevelDrive` e EXECUTABLE `leveldrive` (confirmados pelo usuário em 2026-11-12; não mudar após o 1º release). Daí vêm o nome do MSI, `leveldrive.exe`, `leveldrive.cfg` e o pipe `\\.\pipe\leveldrive-<user>`.
   - A pasta de dados usa o APPLICATION_NAME, conferido na instalação (Fase 7): `%APPDATA%\Level Drive` (cfg e logs) e `%LOCALAPPDATA%\Level Drive` (cache). O Nextcloud usa `%APPDATA%\Nextcloud`, então não há conflito.
   - O texto "Git revision" do MSI e do "Sobre" é o HEAD no momento do build. Faça o commit antes do build de release.
 - **URI scheme:** `leveldrive://` (decisão de 2026-11-11). Consequência aceita: o "Abrir localmente" do servidor, que gera links `nc://`, não abre o Level Drive.
@@ -172,7 +173,6 @@ Detalhes do MSI:
 
 ## Pendências / placeholders
 Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<PREENCHER>>`.
-- `<<PREENCHER: confirmar SHORTNAME "LevelDrive" / EXECUTABLE "leveldrive">>`. **Precisa estar fechado antes do 1º release:** o SHORTNAME vira a pasta `%APPDATA%`.
 - `<<PREENCHER: confirmar nomes exibidos dos servidores>>`. Hoje: "Level Drive", "Level Drive 2" e "Level Drive 3". As URLs já foram definidas.
 - `<<PREENCHER: URL do servidor de atualização>>` (futuro; o updater está desligado).
 - Ajuda: `APPLICATION_HELP_URL` = `https://leveltecnologia.com.br/`, o site da empresa (decisão de 2026-11-12). É aberto pelo menu "Ajuda" (`owncloudgui.cpp:774`) e por Configurações > Info (`infosettings.cpp:66`).

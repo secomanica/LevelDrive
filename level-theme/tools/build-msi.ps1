@@ -20,7 +20,7 @@
 #        config\<ShortName>\sync-exclude.lst -> raiz  (configfile.cpp:418)
 #        etc\ssl\openssl.cnf               -> raiz    (application.cpp:244)
 #        <IconName>.ico                     -> raiz    (Nextcloud.wxs:97, sem regra de install no CMake)
-#   2. (opcional, -Sign) assina os binários da Level ANTES de empacotar (sign-level.ps1);
+#   2. (opcional, -Sign) assina todos os .exe/.dll sem assinatura ANTES de empacotar (sign-level.ps1);
 #   3. roda o make-msi.bat do upstream (heat/candle/light + transforms de idioma, incl. pt-BR — patch 0011);
 #   4. (opcional, -Sign) assina o .msi;
 #   5. copia o MSI para level-theme\build\out e imprime o SHA-256.
@@ -83,7 +83,7 @@ Write-Host "   $n arquivos; exe: $((Get-Item "$app\$Exe.exe").VersionInfo.Produc
 
 # ---------------------------------------------------------------- 2. assinatura dos binários
 if ($Sign) {
-    Step 'Assinando binários da Level'
+    Step 'Assinando os binários (.exe/.dll sem assinatura) e a ação personalizada do MSI'
     & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'sign-level.ps1') -Path $app, "$archive\msi\NCMsiHelper64.dll"
     if ($LASTEXITCODE -ne 0) { throw 'Assinatura dos binários falhou.' }
 }

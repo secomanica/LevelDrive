@@ -1,31 +1,30 @@
 ﻿# SPDX-FileCopyrightText: 2026 Level Tecnologia
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
-# Assinatura de código Authenticode do Level Drive (PREPARADO — ainda NÃO executado: falta o certificado).
+# Assinatura de código Authenticode do Level Drive (PREPARADO — ainda NÃO executado: falta configurar o certificado).
 #
 # Uso (chamado por build-msi.ps1 -Sign, ou manualmente):
 #   powershell -ExecutionPolicy Bypass -File level-theme\tools\sign-level.ps1 -Path <arquivo-ou-pasta> [...]
 #
-# Ordem correta no build:
-#   1. assinar os binários da Level na pasta do app (leveldrive.exe, leveldrivecmd.exe, leveldrive*.dll,
-#      NC*.dll, CfApiShellExtensions.dll, NCMsiHelper64.dll) ANTES do heat/candle/light;
-#   2. gerar o MSI;
-#   3. assinar o .msi.
-# DLLs de terceiros (Qt, OpenSSL…) já vêm assinadas pelos fornecedores ou não precisam; por padrão só os
-# binários listados em $LevelBinaryPatterns são assinados.
+# O que é assinado (igual ao Nextcloud oficial, que assina os 129 .exe/.dll do seu pacote):
+#   1. ANTES do heat/candle/light: TODOS os .exe/.dll da pasta do app que ainda não têm assinatura válida
+#      (binários Level, Qt, OpenSSL, KDE, plugins…) e a NCMsiHelper64.dll (ação personalizada embutida no MSI).
+#      Os que já vêm assinados (ex.: runtime do Visual C++, assinado pela Microsoft) são mantidos como estão.
+#   2. gera o MSI;
+#   3. assina o .msi (depois dos transforms de idioma embutidos; qualquer alteração posterior invalida a assinatura).
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][string[]]$Path,
-    # Certificado: arquivo .pfx OU impressão digital de um certificado no repositório do Windows / token HSM
+    # Certificado: arquivo .pfx OU impressão digital (thumbprint) de um certificado no repositório do Windows,
+    # que é o caso de token USB/HSM (a chave fica no token; o signtool usa o CSP/KSP do fabricante).
     [string]$CertificateFile = '<<PREENCHER: caminho do certificado .pfx da Level (ou deixe vazio e use -Thumbprint)>>',
     [string]$Thumbprint = '',
     # A senha NÃO deve ficar no repositório: use a variável de ambiente LEVEL_SIGN_PASSWORD (CI/cofre de segredos)
     [string]$TimestampUrl = '<<PREENCHER: URL do servidor de carimbo de tempo RFC 3161 da autoridade certificadora>>',
     [string]$Description = 'Level Drive',
-    [string]$DescriptionUrl = '<<PREENCHER: site/suporte da Level>>'
+    [string]$DescriptionUrl = 'https://leveltecnologia.com.br/'
 )
 $ErrorActionPreference = 'Stop'
-$LevelBinaryPatterns = @('leveldrive*.exe', 'leveldrive*.dll', 'NC*.dll', 'CfApiShellExtensions.dll', '*.msi')
 
 foreach ($v in @($TimestampUrl, $DescriptionUrl) + $(if (-not $Thumbprint) { @($CertificateFile) } else { @() })) {
     if ($v -like '*<<PREENCHER*') { throw "Assinatura não configurada: $v" }
@@ -42,16 +41,26 @@ $certArgs = if ($Thumbprint) { @('/sha1', $Thumbprint) } else {
     @('/f', $CertificateFile, '/p', $env:LEVEL_SIGN_PASSWORD)
 }
 
-$files = foreach ($p in $Path) {
+$candidates = foreach ($p in $Path) {
     if (Test-Path $p -PathType Container) {
-        Get-ChildItem $p -Recurse -File -Include $LevelBinaryPatterns
+        Get-ChildItem $p -Recurse -File -Include '*.exe', '*.dll', '*.msi'
     } else { Get-Item $p }
 }
-foreach ($f in $files) {
-    Write-Host "Assinando $($f.FullName)"
-    & $signtool sign /fd sha256 /tr $TimestampUrl /td sha256 /d $Description /du $DescriptionUrl @certArgs $f.FullName
-    if ($LASTEXITCODE -ne 0) { throw "signtool falhou em $($f.Name)" }
-    & $signtool verify /pa /q $f.FullName
-    if ($LASTEXITCODE -ne 0) { throw "Verificação da assinatura falhou em $($f.Name)" }
+# mantém o que já tem assinatura válida de terceiros (ex.: Microsoft); assina o resto
+$files = @($candidates | Where-Object { (Get-AuthenticodeSignature $_.FullName).Status -ne 'Valid' })
+$kept = @($candidates).Count - $files.Count
+Write-Host "Para assinar: $($files.Count) arquivo(s); já assinados por terceiros (mantidos): $kept"
+if ($files.Count -eq 0) { return }
+
+# signtool aceita vários arquivos por chamada; lotes evitam linha de comando longa demais
+# (e, com token USB, reduzem os pedidos de PIN)
+$batchSize = 50
+for ($i = 0; $i -lt $files.Count; $i += $batchSize) {
+    $batch = @($files[$i..([Math]::Min($i + $batchSize, $files.Count) - 1)] | ForEach-Object FullName)
+    Write-Host "Assinando lote $([int]($i / $batchSize) + 1): $($batch.Count) arquivo(s)"
+    & $signtool sign /fd sha256 /tr $TimestampUrl /td sha256 /d $Description /du $DescriptionUrl @certArgs @batch
+    if ($LASTEXITCODE -ne 0) { throw "signtool falhou no lote que começa em $($batch[0])" }
+    & $signtool verify /pa /q @batch
+    if ($LASTEXITCODE -ne 0) { throw "Verificação da assinatura falhou no lote que começa em $($batch[0])" }
 }
-Write-Host "OK: $(@($files).Count) arquivo(s) assinados."
+Write-Host "OK: $($files.Count) arquivo(s) assinados."

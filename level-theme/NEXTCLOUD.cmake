@@ -20,8 +20,8 @@ if(NEXTCLOUD_DEV)
     set( APPLICATION_ICON_NAME  "LevelDrive" )
 else()
     set( APPLICATION_NAME       "Level Drive" )      # nome exibido (aprovado)
-    set( APPLICATION_SHORTNAME  "LevelDrive" )       # <<PREENCHER: confirmar>> %APPDATA%\LevelDrive, nome do MSI, chave Run
-    set( APPLICATION_EXECUTABLE "leveldrive" )       # <<PREENCHER: confirmar>> leveldrive.exe, named pipe, DLLs
+    set( APPLICATION_SHORTNAME  "LevelDrive" )       # confirmado (2026-11-12); nome do MSI, chave Run. NÃO mudar após o 1º release
+    set( APPLICATION_EXECUTABLE "leveldrive" )       # confirmado (2026-11-12); leveldrive.exe, .cfg, named pipe, DLLs
     set( APPLICATION_ICON_NAME  "${APPLICATION_SHORTNAME}" )  # theme/colored/LevelDrive-icon.svg (Fase 3)
 endif()
 

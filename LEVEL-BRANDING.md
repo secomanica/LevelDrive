@@ -81,10 +81,9 @@ Para trocar logos, atualize `..\level-brand\` com os hashes do `SOURCE.md` e rod
 
 | Pendência | Onde | Impacto |
 |---|---|---|
-| Confirmar SHORTNAME `LevelDrive` / executável `leveldrive` | `level-theme/NEXTCLOUD.cmake` | **Fechar antes do 1º release.** Nome do `.exe`, do `.cfg` e do MSI. |
 | Confirmar nomes exibidos dos servidores ("Level Drive", "Level Drive 2", "Level Drive 3") | `level-theme/NEXTCLOUD.cmake` (`APPLICATION_SERVER_URL`) | É o que o usuário vê na lista. As URLs já estão definidas. |
 | URL pública do código-fonte do fork | `APPLICATION_SOURCE_URL` em `level-theme/NEXTCLOUD.cmake` | **Obrigatório pela GPL antes de distribuir publicamente.** Vazio = crédito sem link. |
-| Certificado de assinatura de código (.pfx/thumbprint), URL de carimbo de tempo RFC 3161 e URL de descrição | `level-theme/tools/sign-level.ps1` | Sem assinatura, o Windows SmartScreen alerta na instalação. Senha via `LEVEL_SIGN_PASSWORD`. |
+| Certificado de assinatura de código (.pfx ou thumbprint de token/HSM) e URL de carimbo de tempo RFC 3161 da CA | `level-theme/tools/sign-level.ps1` | Sem assinatura, o Windows SmartScreen alerta na instalação. São assinados todos os `.exe`/`.dll` sem assinatura, a ação personalizada do MSI e o `.msi`. Senha via `LEVEL_SIGN_PASSWORD`. |
 | URL do servidor de atualização | `APPLICATION_UPDATE_URL` + `BUILD_UPDATER ON` | O updater está desligado até existir o servidor. |
 | Usuário de teste num servidor Level | validação | Testar login, sincronização, menu de contexto, overlays e arquivos virtuais. |
 | Confirmar cores dos indicadores de estado (erro `#C8423B`/`#E0645C`, aviso `#E0A526`, pausa `#5B5C5C`/`#B6B6B6`) | `level-theme/tools/build-icons.ps1` | Cores propostas, fora da paleta oficial. |
