@@ -1,4 +1,4 @@
-# Bootstrap do KDE Craft para o build do cliente desktop (reproduz .github/workflows/windows-build-and-test.yml)
+﻿# Bootstrap do KDE Craft para o build do cliente desktop (reproduz .github/workflows/windows-build-and-test.yml)
 # Uso: powershell -ExecutionPolicy Bypass -File C:\CraftRoot\craft-bootstrap.ps1 [-SrcIni C:\suporte\level-desktop\craftmaster.ini]
 param(
     [string]$SrcIni = 'C:\suporte\level-desktop\craftmaster.ini',

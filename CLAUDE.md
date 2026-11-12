@@ -35,7 +35,13 @@ CMake, Ninja e Qt vêm do Craft.
 # Bootstrap do Craft (reproduz o CI windows-build-and-test.yml); usa o cache binário do Nextcloud
 powershell -ExecutionPolicy Bypass -File level-theme\tools\craft-bootstrap.ps1
 # Copia craftmaster.ini para C:\CraftRoot, clona o CraftMaster, adiciona os blueprints stable-35.0,
-# roda "craft craft" e "craft --install-deps nextcloud-client".
+# roda "craft craft" e "craft --install-deps nextcloud-client". Concluiu em ~25 min (2026-11-11), cache binário.
+
+# Tema
+powershell -ExecutionPolicy Bypass -File level-theme\tools\apply-theme.ps1 [-Check | -Revert]
+
+# Validar valores do CMake sem build completo (feito na Fase 2): cmake -P carregando o NEXTCLOUD.cmake aplicado
+# cmake do Craft: C:\CraftRoot\windows-msvc2022_64-cl\build\dev-utils\cmake\image-RelWithDebInfo-latest\dev-utils\bin\cmake.exe
 ```
 
 ## Decisões
@@ -43,7 +49,25 @@ powershell -ExecutionPolicy Bypass -File level-theme\tools\craft-bootstrap.ps1
 - **Instalador:** MSI (WiX v3, fontes em `admin/win/msi`). O Craft gera NSIS por padrão. O MSI é feito com `BUILD_WIN_MSI=ON` + `make-msi.bat`.
 - **Logos:** mantêm as cores dos próprios SVGs. Os tokens do design system valem só para a interface (ver o HANDOFF em `level-brand`).
 - **Fontes:** Aptos/Century Schoolbook pelo nome de família, com fallback. Nenhum arquivo de fonte é empacotado.
-- **Mecanismo de tema:** `OEM_THEME_DIR` **não existe** na v35.0.3 (ver `level-theme/docs/fase1-mapa-branding.md`). Abordagem proposta em revisão (Fase 2).
+- **Mecanismo de tema:** o `OEM_THEME_DIR` **não existe** na v35.0.3 (ver `level-theme/docs/fase1-mapa-branding.md`). Abordagem aprovada em 2026-11-11:
+  - `level-theme/` com o `NEXTCLOUD.cmake` da Level, `patches/` e `overlay/`;
+  - `tools/apply-theme.ps1` aplica tudo por cima da árvore upstream, que **não é commitada** com o tema.
+- **Nomes:**
+  - Nome exibido: Level Drive.
+  - SHORTNAME `LevelDrive` e EXECUTABLE `leveldrive` (sugeridos, aguardando confirmação). Daí vêm `%APPDATA%\LevelDrive`, `leveldrive.exe` e o pipe `\\.\pipe\leveldrive-<user>`.
+- **URI scheme:** `leveldrive://` (decisão de 2026-11-11). Consequência aceita: o "Abrir localmente" do servidor, que gera links `nc://`, não abre o Level Drive.
+- **Updater:** DESLIGADO (`BUILD_UPDATER OFF`) até existir o servidor de atualização da Level. Para religar:
+  - `APPLICATION_UPDATE_URL` = URL real;
+  - `BUILD_UPDATER` = ON em `level-theme/NEXTCLOUD.cmake`.
+- **Coexistência com o Nextcloud oficial:**
+  - 10 GUIDs próprios: overlays, menu de contexto, UpgradeCode do MSI e CfApi. **Nunca mudar o UpgradeCode depois do 1º release.**
+  - `DISABLE_ACCOUNT_MIGRATION=ON`.
+  - patch 0002 (painel de navegação).
+- **Assistente:** os botões "Sign up" e "Self-host" ficam escondidos (levavam a nextcloud.com). `THEME_CLASS = Theme` (sem a dica try.nextcloud.com).
+- **Cores CMake:**
+  - fundo/cabeçalho do assistente `#103B40`;
+  - título `#EFEFEF`;
+  - cor padrão `#103B40`.
 
 ## Armadilhas
 - **winget:** não existe no Windows Server 2019. Usar os instaladores oficiais.
@@ -56,22 +80,28 @@ powershell -ExecutionPolicy Bypass -File level-theme\tools\craft-bootstrap.ps1
   - `APPLICATION_UPDATE_URL` vazio não compila.
 - **`set()` simples:** `NEXTCLOUD.cmake` usa `set()` simples na maior parte das variáveis, e `-D` não sobrescreve.
 - **PNGs gerados na árvore de fontes:** o build gera PNGs dentro de `theme/` e não os regenera se já existirem. Apagar os PNGs derivados ao trocar SVGs.
+- **`$ErrorActionPreference = 'Stop'` no PowerShell 5.1:** qualquer stderr de um comando nativo (git) vira erro fatal, mesmo com `2>$null`. Nos scripts, usar `'Continue'` e checar `$LASTEXITCODE`.
+- **Scripts `.ps1` com acentos:** salvar em UTF-8 **com BOM**. Sem o BOM, o PowerShell 5.1 lê como ANSI.
+- **`option()` × `set()`:** o `option()` não sobrescreve variável normal já definida (CMP0077 NEW, `cmake_minimum_required 3.16`). Por isso o `NEXTCLOUD.cmake` da Level fixa com `set()` as opções do CMakeLists raiz: `DISABLE_ACCOUNT_MIGRATION`, `WIZARD_HIDE_*`, `BUILD_UPDATER`, `BUILD_WIN_MSI`.
+- **Configure sem os ícones:** o configure completo só passa depois da Fase 3. Sem `theme/colored/LevelDrive-icon.svg`, o `ecm_add_app_icon` fica sem ícones (`src/gui/CMakeLists.txt:577`).
+- **Blueprint do Craft (`nextcloud-client.py`):** na etapa `createPackage` (NSIS), o nome "nextcloud" e "Nextcloud GmbH" estão fixos. Não usar o pacote NSIS do Craft. O MSI sai do `make-msi.bat` (Fase 6).
 - **`APPLICATION_WIZARD_USE_CUSTOM_LOGO`:** não desligar. O ramo `#else` tem erro de sintaxe (`theme.cpp:853`).
 
 ## Pendências / placeholders
-- `<<PREENCHER: SHORTNAME/EXECUTABLE>>` (sugestão: `leveldrive`)
-- `<<PREENCHER: APPLICATION_DOMAIN / REV_DOMAIN>>`
-- `<<PREENCHER: APPLICATION_SERVER_URL>>` (fixo ou não)
-- `<<PREENCHER: URL de update>>` ou desabilitar o updater
-- `<<PREENCHER: site/suporte (HELP_URL, ARP)>>`
-- `<<PREENCHER: URL de homologação>>`
-- `<<PREENCHER: certificado de assinatura de código>>`
-- `<<PREENCHER: URL pública do código-fonte do fork>>` (GPL; usada no "Sobre")
-- **DECISÃO:** manter ou trocar o esquema de URI `nc://`.
+Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<PREENCHER>>`.
+- `<<PREENCHER: confirmar SHORTNAME "LevelDrive" / EXECUTABLE "leveldrive">>`. **Precisa estar fechado antes do 1º release:** o SHORTNAME vira a pasta `%APPDATA%`.
+- `<<PREENCHER: confirmar APPLICATION_DOMAIN "leveltecnologia.com.br" / REV_DOMAIN "br.com.leveltecnologia.drive">>`
+- `<<PREENCHER: APPLICATION_SERVER_URL>>`. Hoje está vazio: o usuário digita a URL. Se preenchido, fica fixo (ENFORCE ON).
+- `<<PREENCHER: URL do servidor de atualização>>` (futuro; o updater está desligado).
+- `<<PREENCHER: site/suporte da Level>>`. `APPLICATION_HELP_URL` está provisoriamente em `https://leveltecnologia.com.br/`.
+- `<<PREENCHER: URL de homologação>>` (Fase 7).
+- `<<PREENCHER: certificado de assinatura de código>>` (Fase 6).
+- `<<PREENCHER: URL pública do código-fonte do fork>>` (GPL; usada no "Sobre", Fase 5).
 
 ## Status das fases
 | Fase | Status |
 |---|---|
 | 0 Ambiente | Concluída (2026-11-11) |
 | 1 Clone e análise | Concluída (2026-11-11) |
-| 2–7 | Não iniciadas |
+| 2 Tema OEM | Concluída (2026-11-11): NEXTCLOUD.cmake Level, patches 0001/0002, apply-theme.ps1 |
+| 3–7 | Não iniciadas |

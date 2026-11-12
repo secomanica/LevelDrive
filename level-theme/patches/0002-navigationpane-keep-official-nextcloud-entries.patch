@@ -1,0 +1,15 @@
+diff --git a/src/gui/navigationpanehelper.cpp b/src/gui/navigationpanehelper.cpp
+index 2aab0ec22a..1cdf9a6c13 100644
+--- a/src/gui/navigationpanehelper.cpp
++++ b/src/gui/navigationpanehelper.cpp
+@@ -68,7 +68,9 @@ void NavigationPaneHelper::updateCloudStorageRegistry()
+             [&entriesToRemove, &currentAppName](HKEY key, const QString &subKey) {
+                 const auto appName = Utility::registryGetKeyValue(key, subKey, QStringLiteral("ApplicationName"));
+                 qCDebug(lcNavPane) << "Searching for user with subKey:" << subKey << "for appName:" << appName.toString();
+-                if (appName.toString() == currentAppName || appName.toString() == unbrandedApplicationName) {
++                // Level: only remove our own entries. Matching unbrandedApplicationName ("Nextcloud")
++                // would delete the navigation pane entries of an official Nextcloud client installed side by side.
++                if (appName.toString() == currentAppName) {
+                     QUuid clsid{ subKey };
+                     Q_ASSERT(!clsid.isNull());
+                     entriesToRemove.append(clsid);
