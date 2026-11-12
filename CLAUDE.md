@@ -97,6 +97,10 @@ powershell -ExecutionPolicy Bypass -File level-theme\tools\apply-theme.ps1 -Reve
   - Nome exibido: Level Drive.
   - SHORTNAME `LevelDrive` e EXECUTABLE `leveldrive` (sugeridos, aguardando confirmação). Daí vêm `%APPDATA%\LevelDrive`, `leveldrive.exe` e o pipe `\\.\pipe\leveldrive-<user>`.
 - **URI scheme:** `leveldrive://` (decisão de 2026-11-11). Consequência aceita: o "Abrir localmente" do servidor, que gera links `nc://`, não abre o Level Drive.
+- **Servidores (decisão de 2026-11-12, opção A):** `APPLICATION_SERVER_URL` é uma lista JSON com `https://leveldrive.com.br`, `https://drv2.leveldrive.com.br` e `https://drv3.leveldrive.com.br` (nesta ordem; o primeiro vem selecionado). Com `APPLICATION_SERVER_URL_ENFORCE ON`, o assistente mostra uma lista de escolha no lugar do campo de URL. Recurso nativo do upstream, sem patch (`accountwizardcontroller.cpp:168`, `ServerPage.qml:57-80`).
+  - Consequências aceitas: o usuário só conecta a esses três servidores, e links `leveldrive://login` para outros servidores são recusados.
+  - A escolha do servidor no instalador MSI (opção B: tela no WiX e propriedade gravando `HKLM\Software\Policies\Level Tecnologia\Level Drive\overrideServerUrl`) ficou para depois.
+  - Armadilha: é uma variável normal, sem CACHE. Com `CACHE STRING`, um `CMakeCache.txt` antigo com valor vazio venceria. Use bracket argument `[=[...]=]` por causa das aspas do JSON.
 - **Updater:** DESLIGADO (`BUILD_UPDATER OFF`) até existir o servidor de atualização da Level. Para religar:
   - `APPLICATION_UPDATE_URL` = URL real;
   - `BUILD_UPDATER` = ON em `level-theme/NEXTCLOUD.cmake`.
@@ -169,7 +173,7 @@ powershell -ExecutionPolicy Bypass -File level-theme\tools\apply-theme.ps1 -Reve
 Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<PREENCHER>>`.
 - `<<PREENCHER: confirmar SHORTNAME "LevelDrive" / EXECUTABLE "leveldrive">>`. **Precisa estar fechado antes do 1º release:** o SHORTNAME vira a pasta `%APPDATA%`.
 - `<<PREENCHER: confirmar APPLICATION_DOMAIN "leveltecnologia.com.br" / REV_DOMAIN "br.com.leveltecnologia.drive">>`
-- `<<PREENCHER: APPLICATION_SERVER_URL>>`. Hoje está vazio: o usuário digita a URL. Se preenchido, fica fixo (ENFORCE ON).
+- `<<PREENCHER: confirmar nomes exibidos dos servidores>>`. Hoje: "Level Drive", "Level Drive 2" e "Level Drive 3". As URLs já foram definidas.
 - `<<PREENCHER: URL do servidor de atualização>>` (futuro; o updater está desligado).
 - `<<PREENCHER: site/suporte da Level>>`. `APPLICATION_HELP_URL` está provisoriamente em `https://leveltecnologia.com.br/`.
 - `<<PREENCHER: URL de homologação>>` (Fase 7).

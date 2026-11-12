@@ -63,9 +63,13 @@ if(APPLE)
 endif()
 
 set( APPLICATION_ICON_SET   "SVG" )
-# <<PREENCHER: URL do servidor Level>>. Vazio = usuário digita a URL no assistente.
-# Se preenchido, com ENFORCE ON o cliente só conecta nesse servidor.
-set( APPLICATION_SERVER_URL "" CACHE STRING "URL for the server to use. If entered, the UI field will be pre-filled with it" )
+# Servidores Level (decisão do usuário, 2026-11-12, opção A): lista JSON [{"name","url"}].
+# Com ENFORCE ON o assistente troca o campo de URL por uma lista de escolha
+# (src/gui/wizard/accountwizardcontroller.cpp:168, ServerPage.qml:57-80) e o cliente
+# só conecta a estes servidores. O primeiro vem selecionado.
+# <<PREENCHER: confirmar nomes exibidos>> (nomes propostos; as URLs são as definidas pelo usuário).
+# Variável normal (não CACHE): um CMakeCache.txt antigo com valor vazio não pode vencer.
+set( APPLICATION_SERVER_URL [=[[{"name":"Level Drive","url":"https://leveldrive.com.br"},{"name":"Level Drive 2","url":"https://drv2.leveldrive.com.br"},{"name":"Level Drive 3","url":"https://drv3.leveldrive.com.br"}]]=] )
 set( APPLICATION_SERVER_URL_ENFORCE ON ) # If set and APPLICATION_SERVER_URL is defined, the server can only connect to the pre-defined URL
 set( APPLICATION_REV_DOMAIN "br.com.leveltecnologia.drive" )       # <<PREENCHER: confirmar>>
 set( APPLICATION_REV_DOMAIN_DBUS "drive.leveltecnologia.com.br" )  # <<PREENCHER: confirmar>> (só Linux)
