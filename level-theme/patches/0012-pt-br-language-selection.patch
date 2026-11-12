@@ -1,0 +1,16 @@
+diff --git a/src/gui/application.cpp b/src/gui/application.cpp
+index 6438a20c03..6ae24dd029 100644
+--- a/src/gui/application.cpp
++++ b/src/gui/application.cpp
+@@ -1286,6 +1286,11 @@ void Application::setupTranslations()
+     if (choosenLanguage.isEmpty()) {
+         for(const auto &localeToTest : QLocale::system().uiLanguages(QLocale::TagSeparator::Underscore)){
+             const auto trFile = QString{QLatin1String{"client_"} + localeToTest};
++            // Level: only accept an exact file. QTranslator::load() truncates the name on failure, so the
++            // first entry "pt_Latn_BR" (Qt 6.11 on Windows) would load client_pt.qm (Portugal) before pt_BR.
++            if (!trFolder.exists(trFile + QLatin1String(".qm"))) {
++                continue;
++            }
+             qCDebug(lcApplication()) << "trying to load" << localeToTest << "in" << trFile << "from" << trPath;
+             if (translator->load(trFile, trPath)) {
+                 choosenLanguage = localeToTest;

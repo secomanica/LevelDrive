@@ -95,7 +95,9 @@ powershell -ExecutionPolicy Bypass -File level-theme\tools\apply-theme.ps1 -Reve
   - `tools/apply-theme.ps1` aplica tudo por cima da árvore upstream, que **não é commitada** com o tema.
 - **Nomes:**
   - Nome exibido: Level Drive.
-  - SHORTNAME `LevelDrive` e EXECUTABLE `leveldrive` (sugeridos, aguardando confirmação). Daí vêm `%APPDATA%\LevelDrive`, `leveldrive.exe` e o pipe `\\.\pipe\leveldrive-<user>`.
+  - SHORTNAME `LevelDrive` e EXECUTABLE `leveldrive` (sugeridos, aguardando confirmação). Daí vêm o nome do MSI, `leveldrive.exe`, `leveldrive.cfg` e o pipe `\\.\pipe\leveldrive-<user>`.
+  - A pasta de dados usa o APPLICATION_NAME, conferido na instalação (Fase 7): `%APPDATA%\Level Drive` (cfg e logs) e `%LOCALAPPDATA%\Level Drive` (cache). O Nextcloud usa `%APPDATA%\Nextcloud`, então não há conflito.
+  - O texto "Git revision" do MSI e do "Sobre" é o HEAD no momento do build. Faça o commit antes do build de release.
 - **URI scheme:** `leveldrive://` (decisão de 2026-11-11). Consequência aceita: o "Abrir localmente" do servidor, que gera links `nc://`, não abre o Level Drive.
 - **Domínio (decisão de 2026-11-12):** o domínio do projeto é sempre `leveldrive.com.br`. `APPLICATION_DOMAIN` = `leveldrive.com.br`; `APPLICATION_REV_DOMAIN` = `br.com.leveldrive.desktopclient` (DBUS `desktopclient.leveldrive.com.br`). Vendor continua "Level Tecnologia", que é o nome da empresa. Exceção: o link de Ajuda (`APPLICATION_HELP_URL`) é `https://leveltecnologia.com.br/`, o site da empresa.
 - **Servidores (decisão de 2026-11-12, opção A):** `APPLICATION_SERVER_URL` é uma lista JSON com `https://leveldrive.com.br`, `https://drv2.leveldrive.com.br` e `https://drv3.leveldrive.com.br` (nesta ordem; o primeiro vem selecionado). Com `APPLICATION_SERVER_URL_ENFORCE ON`, o assistente mostra uma lista de escolha no lugar do campo de URL. Recurso nativo do upstream, sem patch (`accountwizardcontroller.cpp:168`, `ServerPage.qml:57-80`).

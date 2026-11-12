@@ -1,0 +1,44 @@
+diff --git a/src/gui/settingsdialog.cpp b/src/gui/settingsdialog.cpp
+index 8a5fb5a6c3..abde1bb758 100644
+--- a/src/gui/settingsdialog.cpp
++++ b/src/gui/settingsdialog.cpp
+@@ -100,7 +100,13 @@ constexpr auto TOOLBAR_CSS = QLatin1String(
+     "QToolBar { background: transparent; margin: 0; padding: 0; border: none; spacing: 0; } "
+     "QToolBar QToolButton { background: transparent; border: none; margin: 0; padding: 8px 12px; font-size: 14px; border-radius: 8px; } "
+     "QToolBar QToolBarExtension { padding: 0; } "
+-    "QToolBar QToolButton:checked { background: palette(highlight); color: palette(highlighted-text); }"
++    // Level: brand "surface-deep" (#103B40) instead of the Windows accent colour for the selected page
++    "QToolBar QToolButton:checked { background: #103B40; color: #FFFFFF; }"
++);
++// Level: in dark mode the selected page is mint (#83C8B4) with #103B40 text, matching the dark palette
++// highlight of patch 0006 (the colour-aware icons follow QPalette::HighlightedText, which is #103B40 there)
++constexpr auto LEVEL_TOOLBAR_DARK_CSS = QLatin1String(
++    " QToolBar QToolButton:checked { background: #83C8B4; color: #103B40; }"
+ );
+ 
+ const float buttonSizeRatio = 1.618f; // golden ratio
+@@ -549,7 +555,7 @@ void SettingsDialog::customizeStyle()
+     }
+ 
+     const QScopedValueRollback<bool> updatingStyle(_updatingStyle, true);
+-    _toolBar->setStyleSheet(TOOLBAR_CSS);
++    _toolBar->setStyleSheet(Theme::instance()->darkMode() ? QString(TOOLBAR_CSS) + LEVEL_TOOLBAR_DARK_CSS : QString(TOOLBAR_CSS));
+ 
+ #ifdef Q_OS_WIN
+     const auto windowColor = QStringLiteral("palette(window)");
+diff --git a/src/gui/settingsswitch.cpp b/src/gui/settingsswitch.cpp
+index 5c325c7560..f35a889ff1 100644
+--- a/src/gui/settingsswitch.cpp
++++ b/src/gui/settingsswitch.cpp
+@@ -48,7 +48,10 @@ void SettingsSwitch::paintEvent(QPaintEvent *event)
+     const auto y = (height() - trackHeight) / 2.0;
+     const QRectF trackRect{x, y, trackWidth, trackHeight};
+ 
+-    auto trackColor = isChecked() ? QColor(0, 103, 158) : QColor(107, 107, 107);
++    // Level: brand colours for the "on" state instead of the Windows blue (#00679E):
++    // #103B40 on light surfaces, #53AE93 on dark ones (both keep >= 3:1 against the background)
++    const auto darkSurface = palette().color(QPalette::Window).lightness() < 128;
++    auto trackColor = isChecked() ? (darkSurface ? QColor(0x53, 0xAE, 0x93) : QColor(0x10, 0x3B, 0x40)) : QColor(107, 107, 107);
+     auto knobColor = QColor(255, 255, 255);
+     auto knobShadowColor = QColor(0, 0, 0, 38);
+     if (!isEnabled()) {

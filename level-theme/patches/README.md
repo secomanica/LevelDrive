@@ -139,3 +139,20 @@ Para gerar ou atualizar um patch:
   - Acrescenta 3 traduções novas: o crédito GPL e o código-fonte (`OCC::Theme`) e o copyright da Level (`OCC::LegalNotice`).
   - Crédito em pt-BR, exato como no briefing: "Baseado no Nextcloud Desktop Client, licenciado sob GPLv2."
 - **Outros idiomas:** caem no texto em inglês até serem traduzidos.
+
+## 0012-pt-br-language-selection.patch
+- **Arquivo:** `src/gui/application.cpp`, `setupTranslations()` (linha ~1287 na v35.0.3).
+- **Problema (defeito do upstream, achado na Fase 7):**
+  - No Windows com Qt 6.11, `QLocale::system().uiLanguages()` começa por `pt_Latn_BR` (log: `System UI languages are: ("pt-Latn-BR", "pt-BR", "pt-Latn", "pt")`).
+  - `QTranslator::load("client_pt_Latn_BR")` não acha o arquivo e vai encurtando o nome. Para em `client_pt.qm`, de **Portugal**, antes de testar `pt_BR`.
+  - Resultado: o app aparece em pt-PT ("Arranque do Sistema"), e as strings que só existem no pt_BR, como o crédito GPL, ficam em inglês.
+- **Mudança:** o laço só tenta um idioma se `client_<idioma>.qm` existir exatamente. Assim `pt_Latn_BR` é pulado e `pt_BR` é carregado. Idiomas sem variante regional (por exemplo `de_DE` → `de`) continuam funcionando pelas entradas seguintes da lista.
+- **Upstream:** vale reportar ao Nextcloud, porque afeta também o cliente oficial.
+
+## 0013-settings-brand-colours.patch
+- **Arquivos:** `src/gui/settingsdialog.cpp` e `src/gui/settingsswitch.cpp`.
+- **Problema (achado na Fase 7):** a janela de Configurações usava o azul de destaque do Windows (`palette(highlight)`, #0078D7) na página selecionada e um azul fixo (#00679E) nos interruptores ligados.
+- **Mudanças:**
+  - página selecionada com fundo #103B40 e texto #FFFFFF; no modo escuro, fundo #83C8B4 e texto #103B40, o mesmo destaque da paleta escura do patch 0006. Os ícones da barra seguem `QPalette::HighlightedText`: com #103B40 + branco no escuro, a engrenagem ficava preta sobre teal, achado na Fase 7;
+  - interruptor ligado em #103B40 sobre fundo claro e #53AE93 sobre fundo escuro.
+- **Por quê:** o azul do Windows é cor de sistema, não da marca. A paleta global do app não foi alterada, para não mudar a seleção de texto e as listas do QML.
