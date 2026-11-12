@@ -1,2 +1,7 @@
 # Patches ficam com LF exatamente como gerados pelo git diff (configuracao testada com git apply)
 *.patch -text
+
+# imagens geradas do overlay
+*.png binary
+*.bmp binary
+*.ico binary

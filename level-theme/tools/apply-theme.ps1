@@ -34,6 +34,24 @@ if (Test-Path $overlayDir) {
     })
 }
 
+function Get-StalePngs {
+    $tracked = @{}
+    & git -C $repo ls-files -- theme | ForEach-Object { $tracked[($_ -replace '/','\')] = $true }
+    foreach ($rel in ($overlayFiles | Where-Object { $_ -like '*.svg' })) {
+        $dir = Join-Path $repo (Split-Path $rel)
+        $base = [IO.Path]::GetFileNameWithoutExtension($rel)
+        if (-not (Test-Path $dir)) { continue }
+        Get-ChildItem $dir -File -Filter '*.png' | Where-Object {
+            $_.Name -match ('^' + [regex]::Escape($base) + '-\d+\.png$') -or $_.Name -match ('^\d+-' + [regex]::Escape($base) + '\.png$')
+        } | Where-Object { -not $tracked[$_.FullName.Substring($repo.Length + 1)] } | ForEach-Object { $_.FullName }
+    }
+    # PNGs do ícone de pasta ficam em colored\icons com o nome do ícone de pasta
+    $icons = Join-Path $repo 'theme\colored\icons'
+    if (Test-Path $icons) {
+        Get-ChildItem $icons -File -Filter '*-icon-win-folder.png' | Where-Object { -not $tracked[$_.FullName.Substring($repo.Length + 1)] } | ForEach-Object { $_.FullName }
+    }
+}
+
 function Test-PatchApplied($patch) {
     # aplicado = o reverso aplica limpo
     & git -C $repo apply --reverse --check $patch.FullName 2>$null
@@ -57,6 +75,7 @@ if ($Revert) {
             if (Test-Path $target) { Remove-Item $target -Force; Write-Host "  removido $relGit" }
         }
     }
+    Get-StalePngs | ForEach-Object { Remove-Item $_ -Force }
     $touched = $touched | Sort-Object -Unique
     & git -C $repo checkout -- @touched
     if ($LASTEXITCODE -ne 0) { throw 'git checkout falhou' }
@@ -96,5 +115,12 @@ foreach ($rel in $overlayFiles) {
     }
 }
 Write-Host "  [overlay] $($overlayFiles.Count) arquivo(s)"
+
+# 4. PNGs derivados obsoletos. O build gera PNGs ao lado de cada SVG (<nome>-<tam>.png e <tam>-<nome>.png)
+#    e NÃO os regenera se já existirem (cmake/modules/GenerateIconsUtils.cmake:41-43). Apagamos os que não
+#    estão versionados, para o próximo configure gerar a partir dos SVGs da Level.
+$stale = @(Get-StalePngs)
+if (-not $Check) { $stale | ForEach-Object { Remove-Item $_ -Force } }
+Write-Host "  [png]     $($stale.Count) PNG(s) derivados $(if ($Check) { 'seriam apagados' } else { 'apagados' })"
 
 Write-Host "OK: tema Level $(if ($Check) { 'aplicável' } else { 'aplicado' })."

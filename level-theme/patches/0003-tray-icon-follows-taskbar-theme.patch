@@ -1,0 +1,23 @@
+diff --git a/src/libsync/theme.cpp b/src/libsync/theme.cpp
+index 2dbc450913..3078898cee 100644
+--- a/src/libsync/theme.cpp
++++ b/src/libsync/theme.cpp
+@@ -580,11 +580,18 @@ QString Theme::defaultClientFolder() const
+ QString Theme::systrayIconFlavor(bool mono) const
+ {
+     QString flavor;
++#ifdef Q_OS_WIN
++    // Level: the tray icon always follows the taskbar theme. The branded "black" set (light taskbar)
++    // uses the colored brand symbol and the "white" set (dark taskbar) its negative version.
++    Q_UNUSED(mono)
++    flavor = Utility::hasDarkSystray() ? QLatin1String("white") : QLatin1String("black");
++#else
+     if (mono) {
+         flavor = Utility::hasDarkSystray() ? QLatin1String("white") : QLatin1String("black");
+     } else {
+         flavor = QLatin1String("colored");
+     }
++#endif
+     return flavor;
+ }
+ 

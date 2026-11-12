@@ -42,6 +42,15 @@ powershell -ExecutionPolicy Bypass -File level-theme\tools\apply-theme.ps1 [-Che
 
 # Validar valores do CMake sem build completo (feito na Fase 2): cmake -P carregando o NEXTCLOUD.cmake aplicado
 # cmake do Craft: C:\CraftRoot\windows-msvc2022_64-cl\build\dev-utils\cmake\image-RelWithDebInfo-latest\dev-utils\bin\cmake.exe
+
+# Ícones (Fase 3): gera level-theme\overlay\ a partir de ..\level-brand\ (Inkscape + ImageMagick)
+powershell -ExecutionPolicy Bypass -File level-theme\tools\build-icons.ps1
+
+# Configure completo via Craft com o tema aplicado (passou em 2026-11-11, ~3 min)
+powershell -ExecutionPolicy Bypass -File level-theme\tools\apply-theme.ps1
+powershell -ExecutionPolicy Bypass -File level-theme\tools\craft-build.ps1 -Stage configure
+# diretório de build do Craft: C:\_\d93c962e\build  (config.h lá confirma os valores da marca)
+powershell -ExecutionPolicy Bypass -File level-theme\tools\apply-theme.ps1 -Revert
 ```
 
 ## Decisões
@@ -64,6 +73,11 @@ powershell -ExecutionPolicy Bypass -File level-theme\tools\apply-theme.ps1 [-Che
   - `DISABLE_ACCOUNT_MIGRATION=ON`.
   - patch 0002 (painel de navegação).
 - **Assistente:** os botões "Sign up" e "Self-host" ficam escondidos (levavam a nextcloud.com). `THEME_CLASS = Theme` (sem a dica try.nextcloud.com).
+- **Bandeja (opção A, aprovada em 2026-11-11):** `black/` (barra clara) usa o símbolo `-cor` e `white/` (barra escura) usa o `-cor-negativo`. O patch 0003 escolhe pelo tema da barra. `colored/` (dentro do app) usa a versão clara.
+- **Ícones:** gerados por `build-icons.ps1`. Os `<path>` dos SVGs oficiais são copiados verbatim, sem recolorir, e só posicionados com `transform`. A saída é SVG Tiny, compatível com o QSvgRenderer. O `wizard_logo.svg` é a cópia byte a byte do horizontal `-cor-negativo`.
+  - Estados = símbolo + indicador circular.
+  - Vermelho, âmbar e cinza dos indicadores aguardam confirmação da Level.
+- **Prévia visual:** https://claude.ai/artifact/7x2iwcghTs3Nz3xECbQsPz (privada).
 - **Cores CMake:**
   - fundo/cabeçalho do assistente `#103B40`;
   - título `#EFEFEF`;
@@ -85,6 +99,13 @@ powershell -ExecutionPolicy Bypass -File level-theme\tools\apply-theme.ps1 [-Che
 - **`option()` × `set()`:** o `option()` não sobrescreve variável normal já definida (CMP0077 NEW, `cmake_minimum_required 3.16`). Por isso o `NEXTCLOUD.cmake` da Level fixa com `set()` as opções do CMakeLists raiz: `DISABLE_ACCOUNT_MIGRATION`, `WIZARD_HIDE_*`, `BUILD_UPDATER`, `BUILD_WIN_MSI`.
 - **Configure sem os ícones:** o configure completo só passa depois da Fase 3. Sem `theme/colored/LevelDrive-icon.svg`, o `ecm_add_app_icon` fica sem ícones (`src/gui/CMakeLists.txt:577`).
 - **Blueprint do Craft (`nextcloud-client.py`):** na etapa `createPackage` (NSIS), o nome "nextcloud" e "Nextcloud GmbH" estão fixos. Não usar o pacote NSIS do Craft. O MSI sai do `make-msi.bat` (Fase 6).
+- **Alias `R` no PowerShell:** `R` é alias de `Invoke-History`. Não nomear funções `R`, `H`, `C` etc.
+- **`switch` + splatting:** um `switch` que devolve um único valor dá uma string, e `@var` a quebra em caracteres (`- - c o n f i g u r e`). Envolver com `@( switch ... )`.
+- **`--src-dir` do Craft:** está obsoleto. Usar `--options nextcloud-client.srcDir=<repo>`.
+- **Variável `WIX`:** sessões abertas antes da instalação do WiX não têm a variável. O `NCMsiHelper` falha no configure. O `craft-build.ps1` relê a variável do sistema.
+- **ImageMagick `-splice` com `-gravity center/south`:** insere o espaçamento no meio da imagem. Isso só afetou a folha de prévia, não os ícones.
+- **PNGs do upstream:** o configure gera PNGs também para `theme/*/nextcloud/state-*.svg` do upstream. Eles são ignorados pelo `.gitignore` e inofensivos.
+- **`.ico`:** só é gerado na compilação (`ecm_add_app_icon`), não no configure.
 - **`APPLICATION_WIZARD_USE_CUSTOM_LOGO`:** não desligar. O ramo `#else` tem erro de sintaxe (`theme.cpp:853`).
 
 ## Pendências / placeholders
@@ -97,6 +118,9 @@ Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<
 - `<<PREENCHER: URL de homologação>>` (Fase 7).
 - `<<PREENCHER: certificado de assinatura de código>>` (Fase 6).
 - `<<PREENCHER: URL pública do código-fonte do fork>>` (GPL; usada no "Sobre", Fase 5).
+- `<<PREENCHER: confirmar cores dos indicadores de estado>>`: erro #C8423B/#E0645C, aviso #E0A526, pausa/offline #5B5C5C/#B6B6B6 (`build-icons.ps1`).
+- **Pendente da Fase 5/6:** o MSI do upstream só tem transforms en/de/fr/it/es. Incluir pt-BR.
+- **Pendente da Fase 4/5:** a opção "ícones monocromáticos" fica sem efeito no Windows (patch 0003). Avaliar escondê-la.
 
 ## Status das fases
 | Fase | Status |
@@ -104,4 +128,5 @@ Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<
 | 0 Ambiente | Concluída (2026-11-11) |
 | 1 Clone e análise | Concluída (2026-11-11) |
 | 2 Tema OEM | Concluída (2026-11-11): NEXTCLOUD.cmake Level, patches 0001/0002, apply-theme.ps1 |
-| 3–7 | Não iniciadas |
+| 3 Ícones e imagens | Concluída (2026-11-11): build-icons.ps1, overlay (38 arquivos), patch 0003, configure completo OK |
+| 4–7 | Não iniciadas |

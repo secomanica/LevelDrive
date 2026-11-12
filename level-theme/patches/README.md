@@ -28,3 +28,17 @@ Para gerar ou atualizar um patch:
 - **Mudança:** remove só as entradas com o nome do próprio app.
 - **Efeito colateral:** a constante `unbrandedApplicationName` fica sem uso. Ela foi mantida para o patch continuar mínimo.
 - **Risco:** a regra original servia a quem migrava de um Nextcloud sem marca para um build com marca. Não se aplica à Level.
+
+## 0003-tray-icon-follows-taskbar-theme.patch
+- **Arquivo:** `src/libsync/theme.cpp`, `Theme::systrayIconFlavor()`, linhas 580-589 na v35.0.3.
+- **Problema:**
+  - No Windows, a bandeja usa por padrão um único conjunto `colored/` para os dois temas.
+  - A camada superior do símbolo `-cor` (#173439) some na barra de tarefas escura.
+  - A marca proíbe recolorir. A solução é usar `-cor` na barra clara e `-cor-negativo` na escura (opção A, aprovada em 2026-11-11).
+- **Mudança:**
+  - No Windows, a bandeja escolhe sempre `white/` (barra escura) ou `black/` (barra clara) por `Utility::hasDarkSystray()`, a mesma regra que o upstream já aplica no modo monocromático.
+  - Os conjuntos `white/` e `black/` da Level são gerados por `build-icons.ps1`, com o símbolo colorido correto para cada fundo.
+- **Efeitos colaterais:**
+  - A opção "ícones monocromáticos" das configurações passa a não ter efeito no Windows. Avaliar escondê-la na Fase 4/5.
+  - A troca de tema da barra com o app aberto só aparece na próxima atualização de status da bandeja, porque o cache de ícones usa a variante como chave.
+- **Risco:** baixo. Afeta só o Windows. Outros sistemas mantêm o código original (`#else`).
