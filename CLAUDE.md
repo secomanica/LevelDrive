@@ -82,8 +82,6 @@ Detalhes do MSI:
   - registro `Software\Classes\leveldrive`;
   - textos pt-BR ("Abrir o Level Drive", "Atalho no Menu Iniciar"…).
 - Assinatura: `level-theme\tools\sign-level.ps1`. **Preparada, não executada**, com placeholders para certificado, carimbo de tempo e URL. A senha vem da variável `LEVEL_SIGN_PASSWORD` e nunca fica no repositório.
-powershell -ExecutionPolicy Bypass -File level-theme\tools\apply-theme.ps1 -Revert
-```
 
 ## Decisões
 - **Nome do produto:** Level Drive. Vendor: Level Tecnologia.
@@ -179,7 +177,7 @@ Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<
 - `<<PREENCHER: URL do servidor de atualização>>` (futuro; o updater está desligado).
 - Ajuda: `APPLICATION_HELP_URL` = `https://leveltecnologia.com.br/`, o site da empresa (decisão de 2026-11-12). É aberto pelo menu "Ajuda" (`owncloudgui.cpp:774`) e por Configurações > Info (`infosettings.cpp:66`).
   - `Theme::conflictHelpUrl()` (`<help>/conflicts.html`, `theme.cpp:504`) existe, mas **nenhuma tela o usa em v35** (conferido com grep em cpp/qml/ui), então não há 404. Conferir de novo ao atualizar a versão do upstream.
-- `<<PREENCHER: URL de homologação>>` (Fase 7).
+- `<<PREENCHER: usuário de teste num servidor Level>>`: login, sincronização, menu de contexto, overlays e arquivos virtuais ainda não foram testados (Fase 7).
 - `<<PREENCHER: certificado de assinatura de código>>`, em `level-theme/tools/sign-level.ps1`:
   - `.pfx` ou thumbprint/token;
   - URL de carimbo de tempo RFC 3161 da CA;
@@ -187,14 +185,16 @@ Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<
   - Senha via `LEVEL_SIGN_PASSWORD`.
 - `<<PREENCHER: URL pública do código-fonte do fork>>` (GPL; usada no "Sobre", Fase 5).
 - `<<PREENCHER: confirmar cores dos indicadores de estado>>`: erro #C8423B/#E0645C, aviso #E0A526, pausa/offline #5B5C5C/#B6B6B6 (`build-icons.ps1`).
-- **Pendente da Fase 5/6:** o MSI do upstream só tem transforms en/de/fr/it/es. Incluir pt-BR.
-- `<<PREENCHER: APPLICATION_SOURCE_URL>>`, a URL pública do fork, em `level-theme/NEXTCLOUD.cmake`. Vazio = o "Sobre" mostra o crédito GPL sem link. **Antes de distribuir publicamente, publique o código-fonte e preencha** (GPL).
+- `APPLICATION_SOURCE_URL` = `<<PREENCHER>>` (ver o item da URL pública acima). Vazio = o "Sobre" mostra o crédito GPL sem link. **Antes de distribuir publicamente, publique o código-fonte e preencha** (GPL).
 - **Outros idiomas:** 2 textos alterados e 3 novos ficam em inglês fora do pt-BR até serem traduzidos.
-- **Validar na Fase 7, com o app rodando:**
-  - se o estilo FluentWinUI3 (Win11) respeita a fonte da aplicação nos controles QML;
-  - a serifa no título;
-  - as cores nos temas claro e escuro do Windows 10 e 11.
+- **Validar numa estação Windows 10/11 real** (o Server 2019 não cobre):
+  - se o estilo FluentWinUI3 (Win11) respeita a fonte Aptos nos controles QML;
+  - a barra de tarefas clara (ícones `black/`);
+  - a escala de 150%/200%;
+  - as Configurações no Win11 escuro: lá a paleta reserva do patch 0006 não é aplicada, e o ícone da página selecionada segue o `HighlightedText` do sistema.
 - **Opcional:** aplicar a cor de destaque Level à paleta global (checkboxes e realces nativos dos Widgets).
+- **Opcional:** remover `HKCU\...\Run\LevelDrive` na desinstalação (`RegistryCleanup.vbs.in`). O Nextcloud oficial também deixa essa entrada.
+- **Opcional:** corrigir o texto pt-BR do assistente ("Insira o link para o sua interface web…").
 - **Servidores Level:** configurar o app Theming (cor primária `#103B40`), porque o cliente usa essa cor em atividades e cabeçalhos.
 
 ## Status das fases
@@ -207,4 +207,4 @@ Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<
 | 4 Cores e fontes | Concluída (2026-11-11): patches 0004–0006, contraste 44/44, compilação completa OK |
 | 5 Textos e localização | Concluída (2026-11-11): patches 0007–0010 + 0003 estendido, pt-BR, créditos GPL, compilação OK (ver `level-theme/docs/fase5-textos.md`) |
 | 6 Build e instalador | Concluída (2026-11-12): Release via Craft, patch 0011, `build-msi.ps1` → `LevelDrive-35.0.3.0-x64.msi` com pt-BR; assinatura preparada (`sign-level.ps1`), não executada |
-| 7 Validação | Não iniciada |
+| 7 Validação | Concluída neste servidor (2026-11-12): checklist em `level-theme/docs/fase7-validacao.md`; patches 0012 (idioma pt-BR) e 0013 (cores das Configurações); `LEVEL-BRANDING.md` entregue. Pendentes: login/sync com usuário de teste e Win10/11 reais |
