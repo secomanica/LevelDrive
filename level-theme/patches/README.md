@@ -43,6 +43,8 @@ Para gerar ou atualizar um patch:
   - A troca de tema da barra com o app aberto só aparece na próxima atualização de status da bandeja, porque o cache de ícones usa a variante como chave.
 - **Risco:** baixo. Afeta só o Windows. Outros sistemas mantêm o código original (`#else`).
 
+> **0003, atualização da Fase 5:** `Theme::monoIconsAvailable()` devolve `false` no Windows. A interface já esconde a opção "Usar ícones monocromáticos" nesse caso (`generalsettings.cpp:72-76`), então a opção sem efeito some.
+
 ## 0004-style-qml-level-design-tokens.patch
 - **Arquivo:** `theme/Style/Style.qml`, singleton de estilo de toda a interface QML.
 - **Problema:** a paleta do assistente e dos diálogos está fixa no código, em azuis e cinzas do Nextcloud (`#2b659a`, `#0076b5`, InfoBox `rgba(0,.51,.79)`, gradiente roxo do "Nextcloud Assistant").
@@ -81,3 +83,43 @@ Para gerar ou atualizar um patch:
     - **correção de um defeito do upstream:** o PlaceholderText `(44,44,44)` sobre Base `(42,42,42)` era invisível e passa a `#B6B6B6`.
 - **Não muda (decisão):** a paleta global do Windows 11. Caixas de seleção e realces nativos da janela de configurações seguem a cor de destaque escolhida pelo usuário no Windows. Sobrescrever isso exigiria reaplicar a paleta a cada troca de tema. Fica como melhoria opcional.
 - **Risco:** baixo.
+
+## 0007-about-and-legal-credits.patch
+- **Arquivos:** `config.h.in`, `src/libsync/theme.cpp`, `src/gui/legalnotice.cpp`.
+- **Mudanças:**
+  - `config.h.in`: nova macro `APPLICATION_SOURCE_URL`, definida em `level-theme/NEXTCLOUD.cmake` (<<PREENCHER>>; vazio = sem link).
+  - `theme.cpp`:
+    - nova função `levelCreditString()` com "Based on the Nextcloud Desktop Client, licensed under GPLv2." e, se houver URL, "Source code: <url>". Ela entra em `about()` (painel Sobre) e em `aboutDetails()` (aviso legal);
+    - `gitSHA1()` aponta para o fork em vez de github.com/nextcloud. Sem URL configurada, mostra a revisão sem link.
+  - `legalnotice.cpp`: acrescenta "%1 customizations: Copyright 2026 %2" (Level Drive / Level Tecnologia) **sem remover** os avisos de copyright do Nextcloud e do ownCloud.
+- **Por quê:** é exigência legal (GPL e crédito ao upstream) e pedido do briefing.
+
+## 0008-user-visible-strings.patch
+- **Arquivos:**
+  - `AssistantMessageList.qml`, `ocsassistantconnector.cpp` ("Nextcloud Assistant");
+  - `urischemehandler.cpp` (mensagem com `nc://`);
+  - `application.cpp` (`--help`, nome do log);
+  - `cmd/cmd.cpp` (`--help`);
+  - `logger.cpp`, `logbrowser.cpp`, `owncloudgui.cpp` (nome do arquivo de log);
+  - `advancedsettings.cpp` (zip temporário), `advancedsettings.ui` (link notify_push).
+- **Mudanças:**
+  - Textos sem "Nextcloud".
+  - O nome do log e do zip deriva de `APPLICATION_EXECUTABLE` (`leveldrive.log`).
+  - A mensagem de URI usa `APPLICATION_URI_HANDLER_SCHEME`.
+  - `#include "config.h"` explícito onde as macros passaram a ser usadas.
+- **Traduções:** os textos-fonte alterados perdem a tradução antiga. O pt-BR é refeito no patch 0010.
+
+## 0009-shell-extension-version-info.patch (patch BINÁRIO)
+- **Arquivos:** `NCContextMenu.rc`, `NCOverlay.rc`, `NCUtil.rc` (UTF-16LE, marcados `-text` no upstream) e `CfApiShellIntegration.rc`.
+- **Mudança:** CompanyName "Level Tecnologia"; FileDescription e ProductName "Level Drive shell extension". **LegalCopyright mantido** ("Nextcloud GmbH" é o autor do código).
+- **Armadilha:**
+  - Gerado com `git diff --binary`. Para regenerar, edite preservando o UTF-16LE com BOM.
+  - Patch binário só aplica sobre o blob exato. Se o upstream mudar esses `.rc`, refaça o patch.
+
+## 0010-pt-br-translations.patch
+- **Arquivo:** `translations/client_pt_BR.ts`.
+- **Mudanças:**
+  - Atualiza 2 mensagens cujo texto-fonte mudou no 0008: assistente e Client Push.
+  - Acrescenta 3 traduções novas: o crédito GPL e o código-fonte (`OCC::Theme`) e o copyright da Level (`OCC::LegalNotice`).
+  - Crédito em pt-BR, exato como no briefing: "Baseado no Nextcloud Desktop Client, licenciado sob GPLv2."
+- **Outros idiomas:** caem no texto em inglês até serem traduzidos.

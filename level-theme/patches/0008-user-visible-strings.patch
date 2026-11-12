@@ -1,0 +1,182 @@
+diff --git a/src/cmd/cmd.cpp b/src/cmd/cmd.cpp
+index 2976fc9812..d6a3293a40 100644
+--- a/src/cmd/cmd.cpp
++++ b/src/cmd/cmd.cpp
+@@ -187,8 +187,7 @@ void help()
+     std::cout << "  --exclude [file]       Exclude list file" << std::endl;
+     std::cout << "  --exclude-anchored [file]  Exclude list file, always anchored at the" << std::endl;
+     std::cout << "                         sync root regardless of the file's own name" << std::endl;
+-    std::cout << "                         (use this if --exclude patterns aren't matching," << std::endl;
+-    std::cout << "                         see nextcloud/desktop#2916, #7682)" << std::endl;
++    std::cout << "                         (use this if --exclude patterns aren't matching)" << std::endl;
+     std::cout << "  --unsyncedfolders [file]    File containing the list of unsynced remote folders (selective sync)" << std::endl;
+     std::cout << "  --user, -u [name]      Use [name] as the login name" << std::endl;
+     std::cout << "  --password, -p [pass]  Use [pass] as password" << std::endl;
+@@ -207,7 +206,7 @@ void help()
+     std::cout << "Account provisioning options (non-interactive setup):" << std::endl;
+     std::cout << "  --userid [user]        The user ID to configure" << std::endl;
+     std::cout << "  --apppassword [pass]   The app password for authentication (optional)" << std::endl;
+-    std::cout << "  --serverurl [url]      The base URL of the Nextcloud server" << std::endl;
++    std::cout << "  --serverurl [url]      The base URL of the server" << std::endl;
+     std::cout << "  --localdirpath [path]  Local folder path for sync (optional)" << std::endl;
+     std::cout << "  --remotedirpath [path] Remote folder path to sync, default /" << std::endl;
+     std::cout << "  --isvfsenabled [0|1]   Enable virtual files (1) or disable (0)" << std::endl;
+diff --git a/src/gui/advancedsettings.cpp b/src/gui/advancedsettings.cpp
+index 015344b3eb..ee235b92d0 100644
+--- a/src/gui/advancedsettings.cpp
++++ b/src/gui/advancedsettings.cpp
+@@ -5,6 +5,7 @@
+ 
+ #include "advancedsettings.h"
+ #include "ui_advancedsettings.h"
++#include "config.h"
+ 
+ #include "accountmanager.h"
+ #include "application.h"
+@@ -127,7 +128,7 @@ bool createDebugArchive(const QString &filename)
+     const auto entries = createDebugArchiveFileList();
+ 
+     const auto tempDir = QDir::temp();
+-    const auto tempFilePath = tempDir.filePath(QStringLiteral("nextcloud-debug-archive-temp.zip"));
++    const auto tempFilePath = tempDir.filePath(QStringLiteral(APPLICATION_EXECUTABLE "-debug-archive-temp.zip"));
+ 
+     KZip zip(tempFilePath);
+ 
+diff --git a/src/gui/advancedsettings.ui b/src/gui/advancedsettings.ui
+index 02538a1968..7db8ecb2ad 100644
+--- a/src/gui/advancedsettings.ui
++++ b/src/gui/advancedsettings.ui
+@@ -207,7 +207,7 @@
+          <item>
+           <widget class="QLabel" name="labelInterval">
+            <property name="text">
+-            <string>seconds (if &lt;a href=&quot;https://github.com/nextcloud/notify_push&quot;&gt;Client Push&lt;/a&gt; is unavailable)</string>
++            <string>seconds (if Client Push is unavailable)</string>
+            </property>
+            <property name="textFormat">
+             <enum>Qt::TextFormat::RichText</enum>
+diff --git a/src/gui/application.cpp b/src/gui/application.cpp
+index 6438a20c03..0d3c49ed41 100644
+--- a/src/gui/application.cpp
++++ b/src/gui/application.cpp
+@@ -94,7 +94,7 @@ static const char optionsC[] =
+     "  --logdir <directory>             Write rotating log files to this directory.\n"
+     "  --logexpire <hours>              Set retention for rotating logs.\n"
+     "  --logflush                       Flush the log after each write.\n"
+-    "  --logdebug                       Enable debug messages in Nextcloud logging categories.\n"
++    "  --logdebug                       Enable debug messages in the client logging categories.\n"
+     "  --debug                          Also enable debug logging. Prefer --logdebug for diagnostics.\n"
+     "\n"
+     "Account setup options:\n"
+@@ -969,7 +969,7 @@ void Application::setupLogging()
+     logger->setLogDebug(true);
+ #endif
+ 
+-    logger->enterNextLogFile(QStringLiteral("nextcloud.log"), OCC::Logger::LogType::Log);
++    logger->enterNextLogFile(QStringLiteral(APPLICATION_EXECUTABLE ".log"), OCC::Logger::LogType::Log);
+     logger->enterNextLogFile(QStringLiteral("permanent_delete.log"), OCC::Logger::LogType::DeleteLog);
+ 
+     qCInfo(lcApplication) << "##################" << _theme->appName()
+diff --git a/src/gui/assistant/ocsassistantconnector.cpp b/src/gui/assistant/ocsassistantconnector.cpp
+index 215a999c07..bc20e1d3a3 100644
+--- a/src/gui/assistant/ocsassistantconnector.cpp
++++ b/src/gui/assistant/ocsassistantconnector.cpp
+@@ -29,7 +29,7 @@ Q_LOGGING_CATEGORY(lcOcsAssistantConnector, "nextcloud.gui.assistant.connector",
+ constexpr auto basePath = "/ocs/v2.php/taskprocessing"_L1;
+ constexpr auto assistantChatTaskTypeId = "core:text2text:chat"_L1;
+ constexpr auto assistantSystemPrompt =
+-    "This is a conversation in a specific language between the user and you, Nextcloud Assistant. "
++    "This is a conversation in a specific language between the user and you, the assistant. "
+     "You are a kind, polite and helpful AI that helps the user to the best of its abilities. "
+     "If you do not understand something, you will ask for clarification. Detect the language "
+     "that the user is using. Make sure to use the same language in your response. Do not mention "
+diff --git a/src/gui/assistant/qml/AssistantMessageList.qml b/src/gui/assistant/qml/AssistantMessageList.qml
+index 1a621d494f..e22b815f19 100644
+--- a/src/gui/assistant/qml/AssistantMessageList.qml
++++ b/src/gui/assistant/qml/AssistantMessageList.qml
+@@ -47,7 +47,7 @@ ScrollView {
+             anchors.centerIn: parent
+             width: Math.min(parent.width, Style.assistantEmptyStateMaximumWidth)
+             visible: messageList.count === 0 && !root.assistantController.thinking
+-            text: qsTr("Start a conversation with Nextcloud Assistant.")
++            text: qsTr("Start a conversation with the assistant.")
+             color: Style.wizardSecondaryText
+             font.pixelSize: Style.wizardBodyFontPixelSize
+             horizontalAlignment: Text.AlignHCenter
+diff --git a/src/gui/logbrowser.cpp b/src/gui/logbrowser.cpp
+index ff19e1df11..f5e53fb02b 100644
+--- a/src/gui/logbrowser.cpp
++++ b/src/gui/logbrowser.cpp
+@@ -5,6 +5,7 @@
+  */
+ 
+ #include "logbrowser.h"
++#include "config.h"
+ 
+ #include <cstdio>
+ #include <iostream>
+@@ -110,7 +111,7 @@ void LogBrowser::togglePermanentLogging(bool enabled)
+     if (enabled) {
+         if (!logger->isLoggingToFile()) {
+             logger->setupTemporaryFolderLogDir();
+-            logger->enterNextLogFile(QStringLiteral("nextcloud.log"), OCC::Logger::LogType::Log);
++            logger->enterNextLogFile(QStringLiteral(APPLICATION_EXECUTABLE ".log"), OCC::Logger::LogType::Log);
+         }
+     } else {
+         logger->disableTemporaryFolderLogDir();
+diff --git a/src/gui/owncloudgui.cpp b/src/gui/owncloudgui.cpp
+index 67aa1ea200..ed57b2076f 100644
+--- a/src/gui/owncloudgui.cpp
++++ b/src/gui/owncloudgui.cpp
+@@ -5,6 +5,7 @@
+  */
+ 
+ #include "owncloudgui.h"
++#include "config.h"
+ 
+ #include "account.h"
+ #include "accountmanager.h"
+@@ -291,7 +292,7 @@ void ownCloudGui::slotSyncStateChange(Folder *folder)
+         || result.status() == SyncResult::Problem
+         || result.status() == SyncResult::SyncAbortRequested
+         || result.status() == SyncResult::Error) {
+-        Logger::instance()->enterNextLogFile(QStringLiteral("nextcloud.log"), OCC::Logger::LogType::Log);
++        Logger::instance()->enterNextLogFile(QStringLiteral(APPLICATION_EXECUTABLE ".log"), OCC::Logger::LogType::Log);
+     }
+ }
+ 
+diff --git a/src/gui/urischemehandler.cpp b/src/gui/urischemehandler.cpp
+index 59ffbd5ea5..f20d8a18ca 100644
+--- a/src/gui/urischemehandler.cpp
++++ b/src/gui/urischemehandler.cpp
+@@ -157,7 +157,7 @@ UriSchemeHandler::ParsedUri UriSchemeHandler::parseUri(const QUrl &url)
+ 
+     const auto path = url.path(QUrl::FullyDecoded);
+     if (!path.startsWith(QLatin1String(loginServerPathPrefix))) {
+-        result.error = QStringLiteral("The login URL must use the nc://login/server:{server} path.");
++        result.error = QStringLiteral("The login URL must use the " APPLICATION_URI_HANDLER_SCHEME "://login/server:{server} path.");
+         return result;
+     }
+ 
+diff --git a/src/libsync/logger.cpp b/src/libsync/logger.cpp
+index 19370b0cd4..780ff31480 100644
+--- a/src/libsync/logger.cpp
++++ b/src/libsync/logger.cpp
+@@ -139,7 +139,7 @@ void Logger::doLog(QtMsgType type, const QMessageLogContext &ctx, const QString
+                 _logstream->flush();
+             }
+             closeNoLock();
+-            enterNextLogFileNoLock(QStringLiteral("nextcloud.log"), LogType::Log);
++            enterNextLogFileNoLock(QStringLiteral(APPLICATION_EXECUTABLE ".log"), LogType::Log);
+         }
+         ++linesCounter;
+ 
+@@ -260,7 +260,7 @@ void Logger::disableTemporaryFolderLogDir()
+         return;
+     }
+ 
+-    enterNextLogFile("nextcloud.log", LogType::Log);
++    enterNextLogFile(QStringLiteral(APPLICATION_EXECUTABLE ".log"), LogType::Log);
+     setLogDir(QString());
+     _temporaryFolderLogDir = false;
+ }

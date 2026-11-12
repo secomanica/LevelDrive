@@ -1,0 +1,52 @@
+diff --git a/shell_integration/windows/NCContextMenu/NCContextMenu.rc b/shell_integration/windows/NCContextMenu/NCContextMenu.rc
+index e77e71ea59ee995e4abac8a6ad7079d7ba2d5059..b08172088bc2d154931e5e032b574fb6dda0cb5b 100644
+GIT binary patch
+delta 111
+zcmaE-+^4c(9+$iiLn=cV5a%!`FoXc<WQIJ3d>}8MA)O(UA#t)IulD9ATy0FI$O>H;
+oihz<JZ3+y<3>jeUAOlhvDi}(DWFAm76KF&pP`l;kJ-kLN0Lum$l>h($
+
+delta 33
+pcmeBEd8fQ#9@pe)JZ_U~xH&d|;HqPq%)#R_Ie?dM^BrCz7697d3!wl2
+
+diff --git a/shell_integration/windows/NCOverlays/NCOverlay.rc b/shell_integration/windows/NCOverlays/NCOverlay.rc
+index cc99a61633cc235f88df1e2ca049f104a15a70d2..8ab174859f57f59f1c67a944cd330ae07e72343f 100644
+GIT binary patch
+delta 105
+zcmbQEy+V7#0X}&jhE#?!AkJY>U<d)y$qac6`9NMiLpnnyL*isZLG8(G{A!}e>RcF#
+ZfO0@xlLZC6H+S$?Fk+Y9EGXE`0ss)?7nlG5
+
+delta 69
+zcmZ3XJx6=P0lvvg1l%T1;OCeu#4ji4$B@cU!BE1G%#g#7&rr&cGFev8d-DYT3Pwz+
+J&9Z{sEC9mD5{Cc)
+
+diff --git a/shell_integration/windows/NCUtil/NCUtil.rc b/shell_integration/windows/NCUtil/NCUtil.rc
+index f01e77d1c0b26ad8a1393952f167f58cf3149e31..61c76de9493d8dd081bc5975809701ba3f05de0f 100644
+GIT binary patch
+delta 109
+zcmeyP)S<j#9+$iiLn=cV5a%!`FoXc<WQIJ3d>}8MA)O(UA#t)GulD2uZjQ-sxa35U
+d)w(bg0p)=@Cx7Ho+-$?Wgb};+=8rtxEC9!)8q@#)
+
+delta 65
+zcmeBB{-d;E9@pd+9=FLaxYPvw7*ZK37)ltD8FCo%8A=&aCjaG8-0Z@=gb`C}^Ix8B
+F767I@6LSCn
+
+diff --git a/src/libsync/vfs/cfapi/shellext/CfApiShellIntegration.rc b/src/libsync/vfs/cfapi/shellext/CfApiShellIntegration.rc
+index b6a3777370..8720bc85cd 100644
+--- a/src/libsync/vfs/cfapi/shellext/CfApiShellIntegration.rc
++++ b/src/libsync/vfs/cfapi/shellext/CfApiShellIntegration.rc
+@@ -34,12 +34,12 @@ BEGIN
+     BEGIN
+         BLOCK "040904b0"
+         BEGIN
+-            VALUE "CompanyName", "Nextcloud GmbH"
+-            VALUE "FileDescription", "Nextcloud CfApi shell extension"
++            VALUE "CompanyName", "Level Tecnologia"
++            VALUE "FileDescription", "Level Drive CfApi shell extension"
+             VALUE "FileVersion", NCEXT_VERSION_STRING
+             VALUE "InternalName", "NCOverlays"
+             VALUE "LegalCopyright", "Copyright (C) 2023 Nextcloud GmbH"
+-            VALUE "ProductName", "Nextcloud shell extension"
++            VALUE "ProductName", "Level Drive shell extension"
+             VALUE "ProductVersion", NCEXT_VERSION_STRING
+         END
+     END

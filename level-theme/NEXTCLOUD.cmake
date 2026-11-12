@@ -32,6 +32,9 @@ set( APPLICATION_VENDOR     "Level Tecnologia" )
 # usa a macro direto); host "." faz Updater::updateUrl() devolver URL inválida (updater.cpp:56).
 # <<PREENCHER: URL do servidor de atualização da Level>> quando existir, e religar BUILD_UPDATER.
 set( APPLICATION_UPDATE_URL "https://./" CACHE STRING "URL for updater" )
+# URL pública do código-fonte deste fork (exigência da GPL). Vazio = o "Sobre" mostra o crédito sem link
+# e a revisão Git aparece sem link (patch 0007). <<PREENCHER: URL pública do repositório do fork Level Drive>>
+set( APPLICATION_SOURCE_URL "" CACHE STRING "Public URL of this client's source code (GPL)" )
 # Não pode ficar vazio: vazio vira fallback para docs.nextcloud.com (theme.cpp:495-499).
 set( APPLICATION_HELP_URL   "https://leveltecnologia.com.br/" CACHE STRING "URL for the help menu" )  # <<PREENCHER: site/suporte da Level>>
 

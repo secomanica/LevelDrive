@@ -1,5 +1,5 @@
 diff --git a/src/libsync/theme.cpp b/src/libsync/theme.cpp
-index 2dbc450913..3078898cee 100644
+index 2dbc450913..406e8c9aa2 100644
 --- a/src/libsync/theme.cpp
 +++ b/src/libsync/theme.cpp
 @@ -580,11 +580,18 @@ QString Theme::defaultClientFolder() const
@@ -21,3 +21,18 @@ index 2dbc450913..3078898cee 100644
      return flavor;
  }
  
+@@ -601,8 +608,14 @@ bool Theme::systrayUseMonoIcons() const
+ 
+ bool Theme::monoIconsAvailable() const
+ {
++#ifdef Q_OS_WIN
++    // Level: on Windows the tray icon always follows the taskbar theme (see systrayIconFlavor),
++    // so the "monochrome icons" option has no effect and is hidden in the settings.
++    return false;
++#else
+     QString themeDir = QString(Theme::themePrefix) + QString::fromLatin1("%1/").arg(Theme::instance()->systrayIconFlavor(true));
+     return QDir(themeDir).exists();
++#endif
+ }
+ 
+ QString Theme::updateCheckUrl() const

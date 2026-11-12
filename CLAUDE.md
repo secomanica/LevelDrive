@@ -120,6 +120,9 @@ powershell -ExecutionPolicy Bypass -File level-theme\tools\apply-theme.ps1 -Reve
 - **`Style.qml` com EOL misto:** o `theme/Style/Style.qml` upstream tem finais de linha MISTOS no índice (`git ls-files --eol` = `i/mixed`). Editar com ferramenta que normaliza EOL gera um patch do arquivo inteiro. Editar preservando o EOL por linha (script Python lendo bytes) e conferir com `git diff --stat`.
 - **`apply-theme -Check` testa patches isolados:** cada patch é checado contra o upstream sozinho. Patches que tocam o mesmo arquivo (0003 e 0006 no `theme.cpp`) só são validados de verdade aplicando em sequência (sem `-Check`).
 - **Python:** não está no PATH desta sessão. Usar `C:\Python312-x64\python.exe`.
+- **`.rc` das extensões de shell:** `NCContextMenu.rc`, `NCOverlay.rc` e `NCUtil.rc` são UTF-16LE com BOM e estão marcados como binários (`-text`). Edite decodificando e recodificando em UTF-16LE. O patch deve sair com `git diff --binary` (0009).
+- **Buscar texto em `.qm`:** o `.qm` é UTF-16BE e as strings podem começar em offset ímpar. Uma busca de bytes com uma só alinhamento dá falso negativo; teste os dois alinhamentos.
+- **Edições literais em fontes upstream:** use um script que exige exatamente 1 ocorrência e preserva BOM e EOL (padrão usado na Fase 5), em vez de ferramentas que normalizam o arquivo.
 - **Hook de pre-commit:** o configure instala um hook de pre-commit do KDE (`CMakeLists.txt:101`, clang-format). Para commitar, coloque `C:\CraftRoot\windows-msvc2022_64-cl\bin` **no fim** do PATH (traz o `git-clang-format`). Não usar `--no-verify`. O hook só atua em `.cpp`/`.h` staged. Como os patches da Level são arquivos `.patch` e o código upstream nunca é commitado, ele não bloqueia. Ressalva: o clang-format do Craft (LLVM 20) não entende `EnumTrailingComma` do `.clang-format` da v35 (precisa do clang-format 21+). Por isso não dá para checar a formatação dos patches localmente.
 - **`.ico`:** só é gerado na compilação (`ecm_add_app_icon`), não no configure.
 - **`APPLICATION_WIZARD_USE_CUSTOM_LOGO`:** não desligar. O ramo `#else` tem erro de sintaxe (`theme.cpp:853`).
@@ -136,7 +139,9 @@ Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<
 - `<<PREENCHER: URL pública do código-fonte do fork>>` (GPL; usada no "Sobre", Fase 5).
 - `<<PREENCHER: confirmar cores dos indicadores de estado>>`: erro #C8423B/#E0645C, aviso #E0A526, pausa/offline #5B5C5C/#B6B6B6 (`build-icons.ps1`).
 - **Pendente da Fase 5/6:** o MSI do upstream só tem transforms en/de/fr/it/es. Incluir pt-BR.
-- **Pendente da Fase 5:** a opção "ícones monocromáticos" fica sem efeito no Windows (patch 0003). Avaliar escondê-la.
+- `<<PREENCHER: APPLICATION_SOURCE_URL>>`, a URL pública do fork, em `level-theme/NEXTCLOUD.cmake`. Vazio = o "Sobre" mostra o crédito GPL sem link. **Antes de distribuir publicamente, publique o código-fonte e preencha** (GPL).
+- **Site de suporte:** precisa de uma página `conflicts.html` sob o `APPLICATION_HELP_URL` (link "ajuda sobre conflitos").
+- **Outros idiomas:** 2 textos alterados e 3 novos ficam em inglês fora do pt-BR até serem traduzidos.
 - **Validar na Fase 7, com o app rodando:**
   - se o estilo FluentWinUI3 (Win11) respeita a fonte da aplicação nos controles QML;
   - a serifa no título;
@@ -152,4 +157,5 @@ Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<
 | 2 Tema OEM | Concluída (2026-11-11): NEXTCLOUD.cmake Level, patches 0001/0002, apply-theme.ps1 |
 | 3 Ícones e imagens | Concluída (2026-11-11): build-icons.ps1, overlay (38 arquivos), patch 0003, configure completo OK |
 | 4 Cores e fontes | Concluída (2026-11-11): patches 0004–0006, contraste 44/44, compilação completa OK |
-| 5–7 | Não iniciadas |
+| 5 Textos e localização | Concluída (2026-11-11): patches 0007–0010 + 0003 estendido, pt-BR, créditos GPL, compilação OK (ver `level-theme/docs/fase5-textos.md`) |
+| 6–7 | Não iniciadas |
