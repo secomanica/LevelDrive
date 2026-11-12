@@ -50,6 +50,9 @@ powershell -ExecutionPolicy Bypass -File level-theme\tools\build-icons.ps1
 powershell -ExecutionPolicy Bypass -File level-theme\tools\apply-theme.ps1
 powershell -ExecutionPolicy Bypass -File level-theme\tools\craft-build.ps1 -Stage configure
 # diretório de build do Craft: C:\_\d93c962e\build  (config.h lá confirma os valores da marca)
+powershell -ExecutionPolicy Bypass -File level-theme\tools\craft-build.ps1 -Stage compile
+# compilação completa OK em 2026-11-11 (~11 min, 949 etapas, 8 núcleos): C:\_\d93c962e\build\bin\leveldrive.exe
+# (ProductName "Level Drive", CompanyName "Level Tecnologia", ícone Level; DLLs leveldrivesync*.dll)
 powershell -ExecutionPolicy Bypass -File level-theme\tools\apply-theme.ps1 -Revert
 ```
 
@@ -148,4 +151,5 @@ Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<
 | 1 Clone e análise | Concluída (2026-11-11) |
 | 2 Tema OEM | Concluída (2026-11-11): NEXTCLOUD.cmake Level, patches 0001/0002, apply-theme.ps1 |
 | 3 Ícones e imagens | Concluída (2026-11-11): build-icons.ps1, overlay (38 arquivos), patch 0003, configure completo OK |
-| 4–7 | Não iniciadas |
+| 4 Cores e fontes | Concluída (2026-11-11): patches 0004–0006, contraste 44/44, compilação completa OK |
+| 5–7 | Não iniciadas |
