@@ -1,0 +1,2 @@
+# Patches ficam com LF exatamente como gerados pelo git diff (configuracao testada com git apply)
+*.patch -text
