@@ -30,7 +30,9 @@ param(
     [string]$IconName = 'LevelDrive',     # APPLICATION_ICON_NAME
     [string]$ShortName = 'LevelDrive',    # APPLICATION_SHORTNAME
     [string]$Exe = 'leveldrive',          # APPLICATION_EXECUTABLE
-    [switch]$Sign
+    [switch]$Sign,
+    # All = todos os .exe/.dll sem assinatura (padrão, como o Nextcloud); Level = só os binários Level (cota do eSigner)
+    [ValidateSet('All', 'Level')][string]$SignScope = 'All'
 )
 $ErrorActionPreference = 'Stop'
 $repo = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
@@ -84,8 +86,8 @@ Write-Host "   $n arquivos; exe: $((Get-Item "$app\$Exe.exe").VersionInfo.Produc
 # ---------------------------------------------------------------- 2. assinatura dos binários
 if ($Sign) {
     Step 'Assinando os binários (.exe/.dll sem assinatura) e a ação personalizada do MSI'
-    & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'sign-level.ps1') -Path $app, "$archive\msi\NCMsiHelper64.dll"
-    if ($LASTEXITCODE -ne 0) { throw 'Assinatura dos binários falhou.' }
+    # no mesmo processo: com "powershell -File" o array -Path chegaria quebrado (ver CLAUDE.md, armadilhas)
+    & (Join-Path $PSScriptRoot 'sign-level.ps1') -Path @($app, "$archive\msi\NCMsiHelper64.dll") -Scope $SignScope
 }
 
 # ---------------------------------------------------------------- 3. MSI
@@ -119,8 +121,7 @@ if (-not $msi) { throw 'MSI não gerado.' }
 # ---------------------------------------------------------------- 4. assinatura do MSI
 if ($Sign) {
     Step 'Assinando o MSI'
-    & powershell -NoProfile -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'sign-level.ps1') -Path $msi.FullName
-    if ($LASTEXITCODE -ne 0) { throw 'Assinatura do MSI falhou.' }
+    & (Join-Path $PSScriptRoot 'sign-level.ps1') -Path @($msi.FullName)
 }
 
 # ---------------------------------------------------------------- 5. saída
@@ -130,4 +131,4 @@ $final = Join-Path $out $msi.Name
 Step 'Pronto'
 Write-Host "   $final"
 Write-Host ("   {0:N1} MB  SHA-256 {1}" -f ((Get-Item $final).Length / 1MB), (Get-FileHash $final -Algorithm SHA256).Hash)
-if (-not $Sign) { Write-Host '   (NÃO assinado: use -Sign quando o certificado da Level estiver configurado em sign-level.ps1)' }
+if (-not $Sign) { Write-Host '   (NÃO assinado: use -Sign com o eSigner CKA logado e LEVEL_SIGN_THUMBPRINT definido; ver sign-level.ps1)' }

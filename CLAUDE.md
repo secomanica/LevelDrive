@@ -82,6 +82,9 @@ Detalhes do MSI:
   - registro `Software\Classes\leveldrive`;
   - textos pt-BR ("Abrir o Level Drive", "Atalho no Menu Iniciar"…).
 - Assinatura: `level-theme\tools\sign-level.ps1`. **Preparada, não executada**, com placeholders para certificado e carimbo de tempo. A senha vem da variável `LEVEL_SIGN_PASSWORD` e nunca fica no repositório.
+  - **Certificado: SSL.com eSigner (nuvem)**, definido pelo usuário em 2026-11-12. Integração via **eSigner CKA** (Cloud Key Adapter), que expõe o certificado no repositório "Pessoal" do Windows, e `signtool /sha1 <thumbprint>`. Configuração fora do repositório: `LEVEL_SIGN_THUMBPRINT`. Carimbo de tempo: `http://ts.ssl.com`. Para build sem interação, o CKA fica em modo "Automated", com o segredo TOTP do eSigner configurado no próprio CKA.
+  - Escopo: `build-msi.ps1 -Sign [-SignScope All|Level]`. **All** (padrão) assina ≈215 arquivos por build. **Level** assina ≈10: `leveldrive*.exe/.dll`, `NC*.dll`, `CfApiShellExtensions.dll`, `NCMsiHelper64.dll`. O `.msi` é sempre assinado. Use Level se o plano do eSigner tiver cota de assinaturas.
+  - Armadilha corrigida: o `build-msi.ps1` chamava o `sign-level.ps1` com `powershell -File` e dois caminhos em `-Path`, que chegavam quebrados. Agora chama no mesmo processo.
   - **O que assinar** (revisto em 2026-11-12): todo `.exe`/`.dll` ainda sem assinatura válida, e não só os binários Level. O Nextcloud oficial assina os 129 do seu pacote. O pacote Level tem 202 sem assinatura (Qt, OpenSSL, KDE…) e 12 já assinados pela Microsoft (runtime VC++), que são mantidos. Também a `NCMsiHelper64.dll`, embutida no MSI, e por último o `.msi`, depois dos transforms.
 
 ## Decisões

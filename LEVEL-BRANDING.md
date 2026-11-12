@@ -82,7 +82,7 @@ Para trocar logos, atualize `..\level-brand\` com os hashes do `SOURCE.md` e rod
 | Pendência | Onde | Impacto |
 |---|---|---|
 | Confirmar nomes exibidos dos servidores ("Level Drive", "Level Drive 2", "Level Drive 3") | `level-theme/NEXTCLOUD.cmake` (`APPLICATION_SERVER_URL`) | É o que o usuário vê na lista. As URLs já estão definidas. |
-| Certificado de assinatura de código (.pfx ou thumbprint de token/HSM) e URL de carimbo de tempo RFC 3161 da CA | `level-theme/tools/sign-level.ps1` | Sem assinatura, o Windows SmartScreen alerta na instalação. São assinados todos os `.exe`/`.dll` sem assinatura, a ação personalizada do MSI e o `.msi`. Senha via `LEVEL_SIGN_PASSWORD`. |
+| Assinatura de código: instalar o **SSL.com eSigner CKA** na máquina de build e definir `LEVEL_SIGN_THUMBPRINT` | `level-theme/tools/sign-level.ps1` (carimbo `http://ts.ssl.com`) | Sem assinatura, o Windows SmartScreen alerta na instalação. `build-msi.ps1 -Sign` assina os `.exe`/`.dll` (todos, ou só os da Level com `-SignScope Level`) e o `.msi`. |
 | URL do servidor de atualização | `APPLICATION_UPDATE_URL` + `BUILD_UPDATER ON` | O updater está desligado até existir o servidor. |
 | Usuário de teste num servidor Level | validação | Testar login, sincronização, menu de contexto, overlays e arquivos virtuais. |
 | Confirmar cores dos indicadores de estado (erro `#C8423B`/`#E0645C`, aviso `#E0A526`, pausa `#5B5C5C`/`#B6B6B6`) | `level-theme/tools/build-icons.ps1` | Cores propostas, fora da paleta oficial. |
