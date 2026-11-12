@@ -97,6 +97,7 @@ powershell -ExecutionPolicy Bypass -File level-theme\tools\apply-theme.ps1 -Reve
   - Nome exibido: Level Drive.
   - SHORTNAME `LevelDrive` e EXECUTABLE `leveldrive` (sugeridos, aguardando confirmação). Daí vêm `%APPDATA%\LevelDrive`, `leveldrive.exe` e o pipe `\\.\pipe\leveldrive-<user>`.
 - **URI scheme:** `leveldrive://` (decisão de 2026-11-11). Consequência aceita: o "Abrir localmente" do servidor, que gera links `nc://`, não abre o Level Drive.
+- **Domínio (decisão de 2026-11-12):** o domínio do projeto é sempre `leveldrive.com.br`. `APPLICATION_DOMAIN` = `leveldrive.com.br`; `APPLICATION_REV_DOMAIN` = `br.com.leveldrive.desktopclient` (DBUS `desktopclient.leveldrive.com.br`). Vendor continua "Level Tecnologia", que é o nome da empresa. Exceção: o link de Ajuda (`APPLICATION_HELP_URL`) é `https://leveltecnologia.com.br/`, o site da empresa.
 - **Servidores (decisão de 2026-11-12, opção A):** `APPLICATION_SERVER_URL` é uma lista JSON com `https://leveldrive.com.br`, `https://drv2.leveldrive.com.br` e `https://drv3.leveldrive.com.br` (nesta ordem; o primeiro vem selecionado). Com `APPLICATION_SERVER_URL_ENFORCE ON`, o assistente mostra uma lista de escolha no lugar do campo de URL. Recurso nativo do upstream, sem patch (`accountwizardcontroller.cpp:168`, `ServerPage.qml:57-80`).
   - Consequências aceitas: o usuário só conecta a esses três servidores, e links `leveldrive://login` para outros servidores são recusados.
   - A escolha do servidor no instalador MSI (opção B: tela no WiX e propriedade gravando `HKLM\Software\Policies\Level Tecnologia\Level Drive\overrideServerUrl`) ficou para depois.
@@ -172,10 +173,10 @@ powershell -ExecutionPolicy Bypass -File level-theme\tools\apply-theme.ps1 -Reve
 ## Pendências / placeholders
 Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<PREENCHER>>`.
 - `<<PREENCHER: confirmar SHORTNAME "LevelDrive" / EXECUTABLE "leveldrive">>`. **Precisa estar fechado antes do 1º release:** o SHORTNAME vira a pasta `%APPDATA%`.
-- `<<PREENCHER: confirmar APPLICATION_DOMAIN "leveltecnologia.com.br" / REV_DOMAIN "br.com.leveltecnologia.drive">>`
 - `<<PREENCHER: confirmar nomes exibidos dos servidores>>`. Hoje: "Level Drive", "Level Drive 2" e "Level Drive 3". As URLs já foram definidas.
 - `<<PREENCHER: URL do servidor de atualização>>` (futuro; o updater está desligado).
-- `<<PREENCHER: site/suporte da Level>>`. `APPLICATION_HELP_URL` está provisoriamente em `https://leveltecnologia.com.br/`.
+- Ajuda: `APPLICATION_HELP_URL` = `https://leveltecnologia.com.br/`, o site da empresa (decisão de 2026-11-12). É aberto pelo menu "Ajuda" (`owncloudgui.cpp:774`) e por Configurações > Info (`infosettings.cpp:66`).
+  - `Theme::conflictHelpUrl()` (`<help>/conflicts.html`, `theme.cpp:504`) existe, mas **nenhuma tela o usa em v35** (conferido com grep em cpp/qml/ui), então não há 404. Conferir de novo ao atualizar a versão do upstream.
 - `<<PREENCHER: URL de homologação>>` (Fase 7).
 - `<<PREENCHER: certificado de assinatura de código>>`, em `level-theme/tools/sign-level.ps1`:
   - `.pfx` ou thumbprint/token;
@@ -186,7 +187,6 @@ Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<
 - `<<PREENCHER: confirmar cores dos indicadores de estado>>`: erro #C8423B/#E0645C, aviso #E0A526, pausa/offline #5B5C5C/#B6B6B6 (`build-icons.ps1`).
 - **Pendente da Fase 5/6:** o MSI do upstream só tem transforms en/de/fr/it/es. Incluir pt-BR.
 - `<<PREENCHER: APPLICATION_SOURCE_URL>>`, a URL pública do fork, em `level-theme/NEXTCLOUD.cmake`. Vazio = o "Sobre" mostra o crédito GPL sem link. **Antes de distribuir publicamente, publique o código-fonte e preencha** (GPL).
-- **Site de suporte:** precisa de uma página `conflicts.html` sob o `APPLICATION_HELP_URL` (link "ajuda sobre conflitos").
 - **Outros idiomas:** 2 textos alterados e 3 novos ficam em inglês fora do pt-BR até serem traduzidos.
 - **Validar na Fase 7, com o app rodando:**
   - se o estilo FluentWinUI3 (Win11) respeita a fonte da aplicação nos controles QML;

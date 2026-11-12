@@ -59,5 +59,5 @@ Conferido por varredura ASCII/UTF-16 nos `.exe`/`.dll` do build:
 Na Fase 7, conferir na interface real (inglês e pt-BR) que nada disso aparece.
 
 ## Consequências a acompanhar
-- **Página de conflitos:** o link "ajuda sobre conflitos" é `APPLICATION_HELP_URL + "conflicts.html"`. O site de suporte da Level precisa dessa página (<<PREENCHER: site/suporte>>).
+- **Página de conflitos:** `Theme::conflictHelpUrl()` (`APPLICATION_HELP_URL + "conflicts.html"`) existe, mas nenhuma tela a usa em v35 (revisto em 2026-11-12). Não é preciso publicar `conflicts.html`. Conferir de novo a cada atualização do upstream.
 - **Instalador MSI:** os textos do instalador e a tradução pt-BR ficam para a Fase 6. O upstream só tem en/de/fr/it/es.

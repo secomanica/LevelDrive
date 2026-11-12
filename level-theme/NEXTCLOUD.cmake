@@ -26,7 +26,7 @@ else()
 endif()
 
 set( APPLICATION_CONFIG_NAME "${APPLICATION_EXECUTABLE}" )
-set( APPLICATION_DOMAIN     "leveltecnologia.com.br" )  # <<PREENCHER: confirmar>> links do "Adicionar/Remover Programas"
+set( APPLICATION_DOMAIN     "leveldrive.com.br" )  # domínio do projeto (usuário, 2026-11-12); links do "Adicionar/Remover Programas"
 set( APPLICATION_VENDOR     "Level Tecnologia" )
 # Updater DESLIGADO por enquanto (BUILD_UPDATER OFF abaixo). A URL não pode ficar vazia (theme.cpp:610
 # usa a macro direto); host "." faz Updater::updateUrl() devolver URL inválida (updater.cpp:56).
@@ -36,7 +36,8 @@ set( APPLICATION_UPDATE_URL "https://./" CACHE STRING "URL for updater" )
 # e a revisão Git aparece sem link (patch 0007). <<PREENCHER: URL pública do repositório do fork Level Drive>>
 set( APPLICATION_SOURCE_URL "" CACHE STRING "Public URL of this client's source code (GPL)" )
 # Não pode ficar vazio: vazio vira fallback para docs.nextcloud.com (theme.cpp:495-499).
-set( APPLICATION_HELP_URL   "https://leveltecnologia.com.br/" CACHE STRING "URL for the help menu" )  # <<PREENCHER: site/suporte da Level>>
+# Variável normal (não CACHE), para um CMakeCache.txt antigo não manter o valor anterior.
+set( APPLICATION_HELP_URL   "https://leveltecnologia.com.br/" )  # site da empresa (usuário, 2026-11-12)
 
 # Bloco macOS simplificado (o upstream escolhe o ícone "Nextcloud-macOS"/Icon Composer só para builds
 # "Nextcloud"; em builds de marca cai sempre no pipeline legado .icns). Não afeta o Windows.
@@ -71,8 +72,10 @@ set( APPLICATION_ICON_SET   "SVG" )
 # Variável normal (não CACHE): um CMakeCache.txt antigo com valor vazio não pode vencer.
 set( APPLICATION_SERVER_URL [=[[{"name":"Level Drive","url":"https://leveldrive.com.br"},{"name":"Level Drive 2","url":"https://drv2.leveldrive.com.br"},{"name":"Level Drive 3","url":"https://drv3.leveldrive.com.br"}]]=] )
 set( APPLICATION_SERVER_URL_ENFORCE ON ) # If set and APPLICATION_SERVER_URL is defined, the server can only connect to the pre-defined URL
-set( APPLICATION_REV_DOMAIN "br.com.leveltecnologia.drive" )       # <<PREENCHER: confirmar>>
-set( APPLICATION_REV_DOMAIN_DBUS "drive.leveltecnologia.com.br" )  # <<PREENCHER: confirmar>> (só Linux)
+# Identificador interno (domínio invertido, no padrão do upstream "com.nextcloud.desktopclient").
+# Não aparece ao usuário; deve ficar estável depois da primeira distribuição.
+set( APPLICATION_REV_DOMAIN "br.com.leveldrive.desktopclient" )
+set( APPLICATION_REV_DOMAIN_DBUS "desktopclient.leveldrive.com.br" )  # só Linux
 set( DEVELOPMENT_TEAM "" CACHE STRING "Apple Development Team ID" )  # só macOS; Team ID do Nextcloud removido
 set( APPLICATION_VIRTUALFILE_SUFFIX "leveldrive" CACHE STRING "Virtual file suffix (not including the .)")
 set( APPLICATION_OCSP_STAPLING_ENABLED OFF )
