@@ -183,9 +183,11 @@ Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<
   - URL de carimbo de tempo RFC 3161 da CA;
   - URL de descrição.
   - Senha via `LEVEL_SIGN_PASSWORD`.
-- `<<PREENCHER: URL pública do código-fonte do fork>>` (GPL; usada no "Sobre", Fase 5).
 - `<<PREENCHER: confirmar cores dos indicadores de estado>>`: erro #C8423B/#E0645C, aviso #E0A526, pausa/offline #5B5C5C/#B6B6B6 (`build-icons.ps1`).
-- `APPLICATION_SOURCE_URL` = `<<PREENCHER>>` (ver o item da URL pública acima). Vazio = o "Sobre" mostra o crédito GPL sem link. **Antes de distribuir publicamente, publique o código-fonte e preencha** (GPL).
+- **Repositório público (GPL), definido em 2026-11-12:** https://github.com/secomanica/LevelDrive (remote `level`; branches `main` e `level/branding`, mesmo commit). `APPLICATION_SOURCE_URL` aponta para ele: o "Sobre" mostra "Código-fonte: <url>" e a revisão Git aponta para `<url>/commit/<sha>`. Por isso **todo commit usado num build distribuído precisa estar enviado (push)**.
+  - Licença: GPLv2 (`COPYING` do upstream). O `LICENSE` GPLv3 que o GitHub criou no commit inicial foi removido no merge `bdc2dd5879`.
+  - Envio: o ambiente das ferramentas do Claude tem `GCM_INTERACTIVE=never`. O primeiro login foi feito numa janela PowerShell separada, com token clássico (`repo` + `workflow`). O token fica salvo no Gerenciador de Credenciais do Windows. O escopo `workflow` é obrigatório porque o upstream tem `.github/workflows/`.
+  - Efeito colateral: as GitHub Actions e o Dependabot do upstream disparam no repositório (93 execuções e 4 PRs no 1º envio). Desligar Actions nas configurações do repositório.
 - **Outros idiomas:** 2 textos alterados e 3 novos ficam em inglês fora do pt-BR até serem traduzidos.
 - **Validar numa estação Windows 10/11 real** (o Server 2019 não cobre):
   - se o estilo FluentWinUI3 (Win11) respeita a fonte Aptos nos controles QML;
