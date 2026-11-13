@@ -105,7 +105,10 @@ function Export-Bmp([string]$svgPath, [string]$rel, [int]$w, [int]$h) {
 }
 
 # ---------------------------------------------------------------- 3. preparar
-if (Test-Path $out) { Remove-Item -Recurse -Force $out }
+# overlay\src\ é código escrito à mão (painel da bandeja, patch 0014) e não é gerado aqui: preservar
+if (Test-Path $out) {
+    Get-ChildItem $out -Force | Where-Object { $_.Name -ne 'src' } | Remove-Item -Recurse -Force
+}
 if (Test-Path $work) { Remove-Item -Recurse -Force $work }
 New-Item -ItemType Directory -Force $out, $work | Out-Null
 
