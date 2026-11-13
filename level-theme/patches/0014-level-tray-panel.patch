@@ -1,0 +1,80 @@
+diff --git a/resources.qrc b/resources.qrc
+index 1602de8b0d..ce9cb34433 100644
+--- a/resources.qrc
++++ b/resources.qrc
+@@ -68,5 +68,12 @@
+         <file>src/gui/macOS/ui/FileProviderFileDelegate.qml</file>
+         <file>src/gui/integration/FileActionsWindow.qml</file>
+         <file>src/gui/GovernanceLabelsDialog.qml</file>
++        <file>src/gui/tray/levelpanel/LevelTrayPanel.qml</file>
++        <file>src/gui/tray/levelpanel/LevelIcon.qml</file>
++        <file>src/gui/tray/levelpanel/LevelPillButton.qml</file>
++        <file>src/gui/tray/levelpanel/LevelFooterButton.qml</file>
++        <file>src/gui/tray/levelpanel/LevelStatCard.qml</file>
++        <file>src/gui/tray/levelpanel/level-simbolo-cor.svg</file>
++        <file>src/gui/tray/levelpanel/level-simbolo-cor-negativo.svg</file>
+     </qresource>
+ </RCC>
+diff --git a/src/gui/CMakeLists.txt b/src/gui/CMakeLists.txt
+index de2a5cfec7..508ca7be9b 100644
+--- a/src/gui/CMakeLists.txt
++++ b/src/gui/CMakeLists.txt
+@@ -247,6 +247,8 @@ set(client_SRCS
+     tray/trayaccountappsmodel.cpp
+     tray/usermodel.h
+     tray/usermodel.cpp
++    tray/leveltraypanel.h
++    tray/leveltraypanel.cpp
+     activity/notificationhandler.h
+     activity/notificationhandler.cpp
+     activity/sortedactivitylistmodel.h
+diff --git a/src/gui/trayaccountpopup_qt.cpp b/src/gui/trayaccountpopup_qt.cpp
+index c32e12f709..539240c7e5 100644
+--- a/src/gui/trayaccountpopup_qt.cpp
++++ b/src/gui/trayaccountpopup_qt.cpp
+@@ -13,6 +13,9 @@
+ #include "tray/trayaccountmenupolicy.h"
+ #include "tray/trayimageutils.h"
+ #include "tray/usermodel.h"
++#ifdef Q_OS_WIN
++#include "tray/leveltraypanel.h"
++#endif
+ 
+ #include <QAbstractItemModel>
+ #include <QAction>
+@@ -968,6 +971,11 @@ void setupQtTrayContextMenu(QMenu *menu, Systray *systray)
+     }
+ 
+     populateTrayMenu(menu, systray);
++#ifdef Q_OS_WIN
++    // Level: start the tray panel right after start-up so that its counters ("today") cover the whole
++    // session (deferred: this runs inside the Systray constructor)
++    QTimer::singleShot(0, qApp, [] { LevelTrayPanel::instance(); });
++#endif
+     QObject::connect(menu, &QMenu::aboutToShow, systray, [systray] {
+         systray->setTrayContextMenuVisible(true);
+     });
+@@ -994,6 +1002,13 @@ bool showQtTrayPopup(Systray *systray, const QRect &iconRect, const Systray::Win
+         return false;
+     }
+ 
++#ifdef Q_OS_WIN
++    // Level: the left click opens the Level Drive panel; the menu stays as fallback (no account, QML error)
++    if (const auto shown = LevelTrayPanel::instance()->show(iconRect, position); shown.has_value()) {
++        return *shown;
++    }
++#endif
++
+     hideQtTrayPopup();
+ 
+     const auto menu = new QMenu();
+@@ -1017,6 +1032,9 @@ void hideQtTrayPopup()
+     if (s_trayPopup) {
+         s_trayPopup->close();
+     }
++#ifdef Q_OS_WIN
++    LevelTrayPanel::instance()->hide();
++#endif
+ }
+ 
+ } // namespace OCC
