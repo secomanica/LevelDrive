@@ -14,8 +14,9 @@ A árvore do Nextcloud fica **intacta** nos commits. Toda a customização está
 | Parte | O que faz |
 |---|---|
 | `level-theme/NEXTCLOUD.cmake` | Substitui o `NEXTCLOUD.cmake` do upstream. Define nome, fabricante, domínio, executável, URI `leveldrive://`, lista de servidores, cores do assistente, GUIDs próprios (convivência com o Nextcloud oficial) e opções (updater desligado, sem "Sign up"/"Self-host"). |
-| `level-theme/patches/0001–0013` | Patches mínimos no código, cada um justificado no README dos patches: bandeja, cores e fontes, créditos GPL, textos, pt-BR, instalador, idioma e Configurações. |
+| `level-theme/patches/0001–0015` | Patches mínimos no código, cada um justificado no README dos patches: bandeja, cores e fontes, créditos GPL, textos, pt-BR, instalador, idioma, Configurações, painel da bandeja (0014) e horário relativo dos eventos (0015). |
 | `level-theme/overlay/` | Ícones, estados, logo do assistente e imagens do MSI, **gerados** por `build-icons.ps1` a partir dos SVGs oficiais em `..\level-brand\`. Não editar à mão. |
+| `level-theme/overlay/src/` | Código **escrito à mão**: o painel da bandeja (`gui/tray/leveltraypanel.*` e `gui/tray/levelpanel/*.qml`), ligado ao app pelo patch 0014. O `build-icons.ps1` preserva esta pasta. |
 | `level-theme/tools/` | Scripts reprodutíveis: tema, ícones, Craft, MSI, assinatura e contraste. |
 
 Regras de marca seguidas:
@@ -67,7 +68,8 @@ Instalação silenciosa: `msiexec /i LevelDrive-<versão>-x64.msi /qn`. As propr
 6. **Confira o que pode ter mudado de lugar:**
    - procure "Nextcloud" visível em textos novos (`level-theme/docs/fase1-inventario-nextcloud.md` tem o método);
    - confira se o `Theme::conflictHelpUrl()` passou a ser usado; se sim, publique `conflicts.html` no site de ajuda;
-   - confira se o defeito de idioma do 0012 foi corrigido no upstream;
+   - confira se o defeito de idioma do 0012 e o do horário relativo do 0015 foram corrigidos no upstream;
+   - o painel da bandeja (`overlay/src/`) usa APIs internas do cliente (`UserModel`, `ActivityListModel`, `ProgressDispatcher`, `FolderMan`, `Systray`): se não compilar, ajuste o código do painel às mudanças;
    - confira se o blueprint do Craft ainda tem os dois defeitos contornados no `craft-build.ps1` e no `build-msi.ps1` (veja Armadilhas no `CLAUDE.md`).
 7. **Traduções:** strings novas ou alteradas pelos patches precisam de entrada em `client_pt_BR.ts` (patch 0010).
 8. **Remova de novo o `.github/dependabot.yml`** que vem do upstream (`git rm .github/dependabot.yml`). Ele abre PRs de atualização das Actions do Nextcloud no repositório da Level.

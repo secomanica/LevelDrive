@@ -94,6 +94,7 @@ Detalhes do MSI:
 - **Fontes:** Aptos/Century Schoolbook pelo nome de família, com fallback. Nenhum arquivo de fonte é empacotado.
 - **Mecanismo de tema:** o `OEM_THEME_DIR` **não existe** na v35.0.3 (ver `level-theme/docs/fase1-mapa-branding.md`). Abordagem aprovada em 2026-11-11:
   - `level-theme/` com o `NEXTCLOUD.cmake` da Level, `patches/` e `overlay/`;
+  - `overlay/` tem duas partes: os ícones e imagens gerados por `build-icons.ps1` e `overlay/src/`, código escrito à mão (painel da bandeja). O `build-icons.ps1` apaga e regenera tudo, menos `overlay/src/`;
   - `tools/apply-theme.ps1` aplica tudo por cima da árvore upstream, que **não é commitada** com o tema.
 - **Nomes:**
   - Nome exibido: Level Drive.
@@ -127,6 +128,15 @@ Detalhes do MSI:
   - Contraste: `C:\Python312-x64\python.exe -I level-theme\tools\check-contrast.py` (44/44).
   - Mantido do servidor: `accentColor` e as cores de cabeçalho vêm do app Theming do servidor. Configurar `#103B40` nos servidores Level.
   - Mantido do Windows: a cor de destaque nativa (checkboxes) nos Widgets do Win11.
+- **Painel da bandeja (aprovado em 2026-11-13, patch 0014):** no Windows, o clique no ícone da bandeja abre um painel QML da Level no lugar do menu nativo do upstream.
+  - Código: `overlay/src/gui/tray/leveltraypanel.{h,cpp}` (classe `OCC::LevelTrayPanel`) e `overlay/src/gui/tray/levelpanel/*.qml`.
+  - Conteúdo: estado da sincronização, contadores (na fila, em andamento, concluídos hoje, falhas), progresso, pendências, últimos 5 eventos, botões "Abrir pasta Level Drive" e "Abrir no navegador", pausar, atividades, configurações, ajuda e menu "Mais".
+  - "Concluídos" conta só o dia de hoje (QSettings, grupo `LevelTrayPanel` no `leveldrive.cfg`). O bloqueio de edições foi descartado pelo usuário.
+  - Título "Level Drive" em Aptos Bold (texto, pois não há arquivo do logo "Level drive"). Símbolo Level copiado verbatim de `level-brand`.
+  - Se não houver conta ou o QML falhar, volta para o menu do upstream.
+  - Os horários dos eventos são relidos do `ActivityListModel` ao abrir e a cada 30 s com o painel aberto (a prévia do upstream guarda o texto pronto).
+  - Maquete: https://claude.ai/artifact/A7VhEkW1J7YF2t6LJ28zko (privada).
+- **Horário relativo (patch 0015):** o `Utility::timeAgoInWords` do upstream comparava data local com UTC por `daysTo` e mostrava "1d" para eventos de minutos atrás. Em pt-BR os formatos são "%n min", "%n h", "%n d".
 - **Prévia visual:** https://claude.ai/artifact/7x2iwcghTs3Nz3xECbQsPz (privada).
 - **Cores CMake:**
   - fundo/cabeçalho do assistente `#103B40`;
@@ -172,6 +182,11 @@ Detalhes do MSI:
 - **Ler tabelas de MSI:** no PowerShell 5.1, o COM do Windows Installer exige índices `[int]`. É mais simples usar `msilib` do Python 3.12 ou VBScript (`cscript`). `Key` é palavra reservada no SQL do MSI e vai entre crases.
 - **Hook de pre-commit:** o configure instala um hook de pre-commit do KDE (`CMakeLists.txt:101`, clang-format). Para commitar, coloque `C:\CraftRoot\windows-msvc2022_64-cl\bin` **no fim** do PATH (traz o `git-clang-format`). Não usar `--no-verify`. O hook só atua em `.cpp`/`.h` staged. Como os patches da Level são arquivos `.patch` e o código upstream nunca é commitado, ele não bloqueia. Ressalva: o clang-format do Craft (LLVM 20) não entende `EnumTrailingComma` do `.clang-format` da v35 (precisa do clang-format 21+). Por isso não dá para checar a formatação dos patches localmente.
 - **`.ico`:** só é gerado na compilação (`ecm_add_app_icon`), não no configure.
+- **Propriedade QML `on` + maiúscula:** uma propriedade como `onAccent` é lida como handler de sinal ("Cannot assign a value to a signal") e o painel não carrega (volta o menu antigo). Os tokens do painel se chamam `accentText`, `avatarText` etc.
+- **Janela QML sem `Shortcut` de fechar:** o configure falha (`cmake/modules/CheckQmlWindowCloseShortcuts.cmake`). Toda `Window` precisa de um `Shortcut` com `StandardKey.Close`.
+- **Testar QML sem compilar:** o painel pode ser aberto com o `qml.exe` do Craft e um painel simulado (harness com stub do módulo `Style`, via `QML_IMPORT_PATH`). Os avisos de QML aparecem no terminal.
+- **Painel de navegação some depois de reinstalar:** a desinstalação apaga a entrada do Explorer e a instalação recria, mas o Explorer já aberto não percebe. Reiniciar o Explorer ou sair/entrar na sessão. Não é defeito do Level Drive.
+- **Reinstalação em linha de comando:** um `msiexec /x` seguido de `/i` no mesmo script ficou preso depois da desinstalação. Rodar a instalação separada (`Start-Process ... -PassThru` + `WaitForExit`).
 - **`APPLICATION_WIZARD_USE_CUSTOM_LOGO`:** não desligar. O ramo `#else` tem erro de sintaxe (`theme.cpp:853`).
 
 ## Pendências / placeholders
@@ -211,3 +226,4 @@ Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<
 | 5 Textos e localização | Concluída (2026-11-11): patches 0007–0010 + 0003 estendido, pt-BR, créditos GPL, compilação OK (ver `level-theme/docs/fase5-textos.md`) |
 | 6 Build e instalador | Concluída (2026-11-12): Release via Craft, patch 0011, `build-msi.ps1` → `LevelDrive-35.0.3.0-x64.msi` com pt-BR; assinatura preparada (`sign-level.ps1`), não executada |
 | 7 Validação | Concluída neste servidor (2026-11-12): checklist em `level-theme/docs/fase7-validacao.md`; patches 0012 (idioma pt-BR) e 0013 (cores das Configurações); `LEVEL-BRANDING.md` entregue. Pendentes: login/sync com usuário de teste e Win10/11 reais |
+| Painel da bandeja | Concluído e aprovado pelo usuário (2026-11-13): patches 0014 (painel) e 0015 (horário relativo), traduções no 0010 |
