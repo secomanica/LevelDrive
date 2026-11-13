@@ -187,6 +187,13 @@ Detalhes do MSI:
 - **Testar QML sem compilar:** o painel pode ser aberto com o `qml.exe` do Craft e um painel simulado (harness com stub do módulo `Style`, via `QML_IMPORT_PATH`). Os avisos de QML aparecem no terminal.
 - **Painel de navegação some depois de reinstalar:** a desinstalação apaga a entrada do Explorer e a instalação recria, mas o Explorer já aberto não percebe. Reiniciar o Explorer ou sair/entrar na sessão. Não é defeito do Level Drive.
 - **Reinstalação em linha de comando:** um `msiexec /x` seguido de `/i` no mesmo script ficou preso depois da desinstalação. Rodar a instalação separada (`Start-Process ... -PassThru` + `WaitForExit`).
+- **eSigner CKA (SSL.com):**
+  - Requer .NET Framework 4.8. O servidor veio com 4.7.2; o instalador offline pede reinício.
+  - Use o modo **Auto**: no login ele pede o *secret code*, que é a semente TOTP em texto (base32) mostrada junto do QR code do eSigner. Não é o PIN nem o código de 6 dígitos. O secret code é **por pedido de certificado**, e gerar um QR novo invalida o anterior. Nunca colar no chat nem no repositório.
+  - Se a conta não tem a credencial de Code Signing ativada no eSigner, o login "funciona", mas o log (`%APPDATA%\eSignerCKA\KSP\*.log`) mostra "Signing credentials not configured" e o CKA carrega só um certificado genérico **"eSigner Eseal" (eSigner LLC)**, de assinatura de documentos. Ele não serve para Authenticode. Conferir sempre a impressão digital e o EKU 1.3.6.1.5.5.7.3.3.
+  - "The OTP is invalid" no signtool: o secret code está errado ou é antigo. Primeiro conferir o relógio (`w32tm /stripchart /computer:time.windows.com`).
+  - Para refazer do zero: fechar o CKA, remover os certificados dele de `Cert:\CurrentUser\My` e renomear `%APPDATA%\eSignerCKA`. Depois de funcionar, apagar o backup, que contém o secret antigo.
+  - Antes do build completo, assinar um arquivo de teste (`sign-level.ps1 -Path <um .exe>`). Tentativas repetidas com OTP inválido podem bloquear a conta.
 - **`APPLICATION_WIZARD_USE_CUSTOM_LOGO`:** não desligar. O ramo `#else` tem erro de sintaxe (`theme.cpp:853`).
 
 ## Pendências / placeholders
@@ -196,7 +203,10 @@ Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<
 - Ajuda: `APPLICATION_HELP_URL` = `https://leveltecnologia.com.br/`, o site da empresa (decisão de 2026-11-12). É aberto pelo menu "Ajuda" (`owncloudgui.cpp:774`) e por Configurações > Info (`infosettings.cpp:66`).
   - `Theme::conflictHelpUrl()` (`<help>/conflicts.html`, `theme.cpp:504`) existe, mas **nenhuma tela o usa em v35** (conferido com grep em cpp/qml/ui), então não há 404. Conferir de novo ao atualizar a versão do upstream.
 - Login e sincronização: confirmados pelo usuário em `leveldrive.com.br` (painel de navegação, arquivos virtuais, bandeja). Faltam o menu de contexto do Explorer e os servidores drv2/drv3.
-- `<<PREENCHER: LEVEL_SIGN_THUMBPRINT>>`: instalar o SSL.com eSigner CKA nesta máquina, logar e anotar a impressão digital do certificado. Depois, primeiro build assinado e teste da assinatura (`signtool verify /pa`). Decidir o escopo (All ou Level) conforme a cota do plano.
+- **Assinatura: concluída em 2026-11-13.** Primeiro MSI assinado: `LevelDrive-35.0.3.0-x64.msi`, SHA-256 `208BDAA9…F480A`, do commit `75618700b0`.
+  - Certificado: Code Signing OV do SSL.com, emitido para **MANICA & PEREIRA LTDA** (razão social; "Level Tecnologia" é o nome fantasia), Santa Maria/RS, válido de 2026-06-11 a 2027-06-11. Impressão digital `5BE483C56C62DC286C1099773905E12269E813AF`. Ela é pública, mas os scripts a leem da variável `LEVEL_SIGN_THUMBPRINT`.
+  - Escopo decidido pelo usuário: **Level** (`build-msi.ps1 -Sign -SignScope Level`), por causa da cota. São 11 assinaturas por build (10 binários e o MSI). Qt, OpenSSL e as outras bibliotecas ficam sem assinatura.
+  - O editor mostrado pelo Windows é "MANICA & PEREIRA LTDA". O fabricante no MSI e no "Sobre" continua "Level Tecnologia".
 - `<<PREENCHER: confirmar cores dos indicadores de estado>>`: erro #C8423B/#E0645C, aviso #E0A526, pausa/offline #5B5C5C/#B6B6B6 (`build-icons.ps1`).
 - **Repositório público (GPL), definido em 2026-11-12:** https://github.com/secomanica/LevelDrive (remote `level`; branches `main` e `level/branding`, mesmo commit). `APPLICATION_SOURCE_URL` aponta para ele: o "Sobre" mostra "Código-fonte: <url>" e a revisão Git aponta para `<url>/commit/<sha>`. Por isso **todo commit usado num build distribuído precisa estar enviado (push)**.
   - Licença: GPLv2 (`COPYING` do upstream). O `LICENSE` GPLv3 que o GitHub criou no commit inicial foi removido no merge `bdc2dd5879`.
@@ -224,6 +234,6 @@ Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<
 | 3 Ícones e imagens | Concluída (2026-11-11): build-icons.ps1, overlay (38 arquivos), patch 0003, configure completo OK |
 | 4 Cores e fontes | Concluída (2026-11-11): patches 0004–0006, contraste 44/44, compilação completa OK |
 | 5 Textos e localização | Concluída (2026-11-11): patches 0007–0010 + 0003 estendido, pt-BR, créditos GPL, compilação OK (ver `level-theme/docs/fase5-textos.md`) |
-| 6 Build e instalador | Concluída (2026-11-12): Release via Craft, patch 0011, `build-msi.ps1` → `LevelDrive-35.0.3.0-x64.msi` com pt-BR; assinatura preparada (`sign-level.ps1`), não executada |
+| 6 Build e instalador | Concluída (2026-11-12): Release via Craft, patch 0011, `build-msi.ps1` → `LevelDrive-35.0.3.0-x64.msi` com pt-BR; assinatura via eSigner executada em 2026-11-13 (escopo Level) |
 | 7 Validação | Concluída neste servidor (2026-11-12): checklist em `level-theme/docs/fase7-validacao.md`; patches 0012 (idioma pt-BR) e 0013 (cores das Configurações); `LEVEL-BRANDING.md` entregue. Pendentes: login/sync com usuário de teste e Win10/11 reais |
 | Painel da bandeja | Concluído e aprovado pelo usuário (2026-11-13): patches 0014 (painel) e 0015 (horário relativo), traduções no 0010 |

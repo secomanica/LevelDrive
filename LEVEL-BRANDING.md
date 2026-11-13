@@ -85,11 +85,16 @@ Para trocar logos, atualize `..\level-brand\` com os hashes do `SOURCE.md` e rod
 | Pendência | Onde | Impacto |
 |---|---|---|
 | Confirmar nomes exibidos dos servidores ("Level Drive", "Level Drive 2", "Level Drive 3") | `level-theme/NEXTCLOUD.cmake` (`APPLICATION_SERVER_URL`) | É o que o usuário vê na lista. As URLs já estão definidas. |
-| Assinatura de código: instalar o **SSL.com eSigner CKA** na máquina de build e definir `LEVEL_SIGN_THUMBPRINT` | `level-theme/tools/sign-level.ps1` (carimbo `http://ts.ssl.com`) | Sem assinatura, o Windows SmartScreen alerta na instalação. `build-msi.ps1 -Sign` assina os `.exe`/`.dll` (todos, ou só os da Level com `-SignScope Level`) e o `.msi`. |
 | URL do servidor de atualização | `APPLICATION_UPDATE_URL` + `BUILD_UPDATER ON` | O updater está desligado até existir o servidor. |
 | Testes restantes com conta | validação | Login, sincronização, painel de navegação e arquivos virtuais já confirmados em leveldrive.com.br. Faltam o menu de contexto do Explorer e o login em drv2/drv3. |
 | Confirmar cores dos indicadores de estado (erro `#C8423B`/`#E0645C`, aviso `#E0A526`, pausa `#5B5C5C`/`#B6B6B6`) | `level-theme/tools/build-icons.ps1` | Cores propostas, fora da paleta oficial. |
 | Testar em Windows 10 e 11 reais, com escala 150%/200% e barra clara | validação | O Server 2019 não cobre isso. |
+
+Assinatura de código (resolvida em 2026-11-13):
+- O certificado é Code Signing OV do SSL.com, em nome de **MANICA & PEREIRA LTDA**, válido até 11/06/2027. A assinatura é feita na nuvem pelo **eSigner CKA**, logado em modo Auto na máquina de build.
+- Para gerar o MSI assinado: definir `LEVEL_SIGN_THUMBPRINT` e rodar `build-msi.ps1 -Sign -SignScope Level`. São 11 assinaturas por build, com carimbo `http://ts.ssl.com`.
+- Os problemas encontrados no eSigner estão em Armadilhas, no `CLAUDE.md`.
+- Renovar o certificado antes de junho de 2027. Os MSIs já assinados continuam válidos por causa do carimbo de tempo.
 
 Recomendações fora do cliente:
 - nos três servidores, configurar o app **Theming** com nome "Level Drive" e cor `#103B40`; o cliente e a página de login usam esses valores;
