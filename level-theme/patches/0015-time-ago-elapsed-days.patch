@@ -1,0 +1,18 @@
+diff --git a/src/common/utility.cpp b/src/common/utility.cpp
+index 657dd571c8..d23832afa7 100644
+--- a/src/common/utility.cpp
++++ b/src/common/utility.cpp
+@@ -397,8 +397,11 @@ QString Utility::timeAgoInWords(const QDateTime &dt, const QDateTime &from)
+         now = from;
+     }
+ 
+-    if (dt.daysTo(now) >= 1) {
+-        return QObject::tr("%nd", "delay in days after an activity", dt.daysTo(now));
++    // Level: count elapsed time, not calendar dates. daysTo() compares the dates of a local and a UTC
++    // datetime, so in UTC-3 every activity after 21:00 local time showed "1d".
++    constexpr qint64 secondsPerDay = 24 * 60 * 60;
++    if (dt.secsTo(now) >= secondsPerDay) {
++        return QObject::tr("%nd", "delay in days after an activity", static_cast<int>(dt.secsTo(now) / secondsPerDay));
+     } else {
+         qint64 secs = dt.secsTo(now);
+         if (secs < 0) {
