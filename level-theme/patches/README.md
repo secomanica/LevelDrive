@@ -138,6 +138,8 @@ Para gerar ou atualizar um patch:
   - Atualiza 2 mensagens cujo texto-fonte mudou no 0008: assistente e Client Push.
   - Acrescenta 3 traduções novas: o crédito GPL e o código-fonte (`OCC::Theme`) e o copyright da Level (`OCC::LegalNotice`).
   - Crédito em pt-BR, exato como no briefing: "Baseado no Nextcloud Desktop Client, licenciado sob GPLv2."
+  - Acrescenta as traduções do painel da bandeja (0014): contextos `OCC::LevelTrayPanel` (C++) e `LevelTrayPanel` (QML), com formas de plural.
+  - Tempo relativo das atividades com espaço: "1 min", "2 h", "1 d" (o upstream traz "1min", "2h", "1d").
 - **Outros idiomas:** caem no texto em inglês até serem traduzidos.
 
 ## 0012-pt-br-language-selection.patch
@@ -156,3 +158,32 @@ Para gerar ou atualizar um patch:
   - página selecionada com fundo #103B40 e texto #FFFFFF; no modo escuro, fundo #83C8B4 e texto #103B40, o mesmo destaque da paleta escura do patch 0006. Os ícones da barra seguem `QPalette::HighlightedText`: com #103B40 + branco no escuro, a engrenagem ficava preta sobre teal, achado na Fase 7;
   - interruptor ligado em #103B40 sobre fundo claro e #53AE93 sobre fundo escuro.
 - **Por quê:** o azul do Windows é cor de sistema, não da marca. A paleta global do app não foi alterada, para não mudar a seleção de texto e as listas do QML.
+
+## 0014-level-tray-panel.patch
+- **Arquivos do patch:** `src/gui/CMakeLists.txt`, `resources.qrc` e `src/gui/trayaccountpopup_qt.cpp`.
+- **Arquivos novos (overlay, escritos à mão):**
+  - `src/gui/tray/leveltraypanel.{h,cpp}`: classe `OCC::LevelTrayPanel`, que calcula os dados do painel e executa as ações;
+  - `src/gui/tray/levelpanel/*.qml`: a janela e os componentes;
+  - os dois SVGs do símbolo, copiados sem alteração de `..\level-brand\`.
+- **O que faz:** no Windows, o clique esquerdo no ícone da bandeja abre o **painel do Level Drive**, no lugar do menu do upstream. O layout é o da maquete aprovada "Painel da bandeja Level Drive". O painel mostra:
+  - cabeçalho com o símbolo, o nome, a versão e o estado;
+  - a conta e o nome do servidor, tirado da lista `APPLICATION_SERVER_URL`;
+  - os botões "Abrir pasta Level Drive" e "No navegador";
+  - os contadores Na fila, Em curso, Hoje e Falhas;
+  - o progresso, o bloco "Precisa da sua atenção" (conflitos e erros), os últimos eventos e o rodapé (Pausar, Atividades, Configurações, Ajuda e Mais).
+- **Comportamento mantido:**
+  - o clique direito continua com o menu do upstream;
+  - o clique duplo abre a pasta;
+  - sem conta, ou se o QML falhar, o clique esquerdo volta a mostrar o menu.
+- **De onde vêm os dados:**
+  - `ProgressDispatcher::progressInfo` e `itemCompleted`;
+  - a lista de atividades recentes do `UserModel`;
+  - o "Hoje" e o "Último envio confirmado", gravados no grupo `LevelTrayPanel` do arquivo de configuração e zerados na virada do dia.
+- **Pendências e erros:** cada erro de arquivo (conflito, erro, cota, nome inválido…) fica listado até o arquivo sincronizar ou até uma sincronização terminar sem repeti-lo.
+- **Fecha como um flyout:** ao perder o foco ou com Esc. O clique no ícone que o fechou não o reabre (janela de 400 ms).
+
+## 0015-time-ago-elapsed-days.patch
+- **Arquivo:** `src/common/utility.cpp`, `Utility::timeAgoInWords()`.
+- **Problema (defeito do upstream, achado no teste do painel):** o "há quanto tempo" das atividades decidia "1 dia" com `QDateTime::daysTo()` entre a hora local da atividade e o "agora" em UTC. Isso compara datas de calendário. Em UTC−3, a partir das 21h locais a data UTC já é o dia seguinte, e toda atividade aparecia como "1d", no painel e na janela de Atividades.
+- **Mudança:** "dias" agora é o tempo decorrido (`secsTo() / 86400`). O teste do upstream (`test/testutility.cpp`, `testTimeAgo`) continua válido, porque 24 h exatas ainda dão "1d".
+- **Upstream:** vale reportar ao Nextcloud.

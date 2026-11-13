@@ -1,5 +1,5 @@
 diff --git a/translations/client_pt_BR.ts b/translations/client_pt_BR.ts
-index 2a25126b70..1ee953b736 100644
+index 2a25126b70..c524331c22 100644
 --- a/translations/client_pt_BR.ts
 +++ b/translations/client_pt_BR.ts
 @@ -275,8 +275,8 @@
@@ -55,3 +55,249 @@ index 2a25126b70..1ee953b736 100644
  </context>
  <context>
      <name>OCC::UnifiedSearchPeopleModel</name>
+@@ -6933,7 +6950,7 @@ Servidor respondeu com erro: %2</translation>
+         <location filename="../src/common/utility.cpp" line="401"/>
+         <source>%nd</source>
+         <comment>delay in days after an activity</comment>
+-        <translation><numerusform>%nd</numerusform><numerusform>%nd</numerusform><numerusform>%nd</numerusform></translation>
++        <translation><numerusform>%n d</numerusform><numerusform>%n d</numerusform><numerusform>%n d</numerusform></translation>
+     </message>
+     <message>
+         <location filename="../src/common/utility.cpp" line="405"/>
+@@ -6944,7 +6961,7 @@ Servidor respondeu com erro: %2</translation>
+         <location filename="../src/common/utility.cpp" line="410"/>
+         <source>%nh</source>
+         <comment>delay in hours after an activity</comment>
+-        <translation><numerusform>%nh</numerusform><numerusform>%nh</numerusform><numerusform>%nh</numerusform></translation>
++        <translation><numerusform>%n h</numerusform><numerusform>%n h</numerusform><numerusform>%n h</numerusform></translation>
+     </message>
+     <message>
+         <location filename="../src/common/utility.cpp" line="416"/>
+@@ -6955,13 +6972,13 @@ Servidor respondeu com erro: %2</translation>
+         <location filename="../src/common/utility.cpp" line="418"/>
+         <source>1min</source>
+         <comment>one minute after activity date and time</comment>
+-        <translation>1min</translation>
++        <translation>1 min</translation>
+     </message>
+     <message numerus="yes">
+         <location filename="../src/common/utility.cpp" line="421"/>
+         <source>%nmin</source>
+         <comment>delay in minutes after an activity</comment>
+-        <translation><numerusform>%nmin</numerusform><numerusform>%nmin</numerusform><numerusform>%nmin</numerusform></translation>
++        <translation><numerusform>%n min</numerusform><numerusform>%n min</numerusform><numerusform>%n min</numerusform></translation>
+     </message>
+     <message>
+         <location filename="../src/common/utility.cpp" line="425"/>
+@@ -8556,4 +8573,210 @@ Este é um novo modo experimental. Se você decidir usá-lo, por favor, relate q
+         <translation>Fique seguro</translation>
+     </message>
+ </context>
++<context>
++    <name>OCC::LevelTrayPanel</name>
++    <message>
++        <location filename="../src/gui/tray/leveltraypanel.cpp" line="1"/>
++        <source>Conflict: changed here and on the server</source>
++        <translation>Conflito: editado aqui e no servidor</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/leveltraypanel.cpp" line="1"/>
++        <source>This file could not be synced</source>
++        <translation>Não foi possível sincronizar este arquivo</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/leveltraypanel.cpp" line="1"/>
++        <source>Uploading %1 · %2 of %3</source>
++        <translation>Enviando %1 · %2 de %3</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/leveltraypanel.cpp" line="1"/>
++        <source>Downloading %1 · %2 of %3</source>
++        <translation>Baixando %1 · %2 de %3</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/leveltraypanel.cpp" line="1"/>
++        <source>Uploading %1</source>
++        <translation>Enviando %1</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/leveltraypanel.cpp" line="1"/>
++        <source>Downloading %1</source>
++        <translation>Baixando %1</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/leveltraypanel.cpp" line="1"/>
++        <source>Disconnected</source>
++        <translation>Desconectado</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/leveltraypanel.cpp" line="1"/>
++        <source>Sync paused</source>
++        <translation>Sincronização pausada</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/leveltraypanel.cpp" line="1"/>
++        <source>Checking for changes…</source>
++        <translation>Verificando alterações…</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/leveltraypanel.cpp" line="1"/>
++        <source>All synced</source>
++        <translation>Tudo sincronizado</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/leveltraypanel.cpp" line="1"/>
++        <source>Last upload confirmed: today, %1</source>
++        <translation>Último envio confirmado: hoje, %1</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/leveltraypanel.cpp" line="1"/>
++        <source>Last upload confirmed: yesterday, %1</source>
++        <translation>Último envio confirmado: ontem, %1</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/leveltraypanel.cpp" line="1"/>
++        <source>Last upload confirmed: %1</source>
++        <translation>Último envio confirmado: %1</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/leveltraypanel.cpp" line="1"/>
++        <source>Switch account</source>
++        <translation>Trocar conta</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/leveltraypanel.cpp" line="1"/>
++        <source>Add account</source>
++        <translation>Adicionar conta</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/leveltraypanel.cpp" line="1"/>
++        <source>Quit %1</source>
++        <translation>Sair do %1</translation>
++    </message>
++    <message numerus="yes">
++        <location filename="../src/gui/tray/leveltraypanel.cpp" line="1"/>
++        <source>Syncing · %n file(s) left</source>
++        <translation><numerusform>Sincronizando · falta %n arquivo</numerusform><numerusform>Sincronizando · faltam %n arquivos</numerusform><numerusform>Sincronizando · faltam %n arquivos</numerusform></translation>
++    </message>
++    <message numerus="yes">
++        <location filename="../src/gui/tray/leveltraypanel.cpp" line="1"/>
++        <source>Synced, with %n issue(s)</source>
++        <translation><numerusform>Sincronizado, com %n pendência</numerusform><numerusform>Sincronizado, com %n pendências</numerusform><numerusform>Sincronizado, com %n pendências</numerusform></translation>
++    </message>
++</context>
++<context>
++    <name>LevelTrayPanel</name>
++    <message>
++        <location filename="../src/gui/tray/levelpanel/LevelTrayPanel.qml" line="1"/>
++        <source>Close</source>
++        <translation>Fechar</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/levelpanel/LevelTrayPanel.qml" line="1"/>
++        <source>Open %1 folder</source>
++        <translation>Abrir pasta %1</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/levelpanel/LevelTrayPanel.qml" line="1"/>
++        <source>In browser</source>
++        <translation>No navegador</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/levelpanel/LevelTrayPanel.qml" line="1"/>
++        <source>Queued</source>
++        <translation>Na fila</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/levelpanel/LevelTrayPanel.qml" line="1"/>
++        <source>In progress</source>
++        <translation>Em curso</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/levelpanel/LevelTrayPanel.qml" line="1"/>
++        <source>Today</source>
++        <translation>Hoje</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/levelpanel/LevelTrayPanel.qml" line="1"/>
++        <source>Failures</source>
++        <translation>Falhas</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/levelpanel/LevelTrayPanel.qml" line="1"/>
++        <source>Sync progress</source>
++        <translation>Progresso da sincronização</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/levelpanel/LevelTrayPanel.qml" line="1"/>
++        <source>%1 of %2</source>
++        <translation>%1 de %2</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/levelpanel/LevelTrayPanel.qml" line="1"/>
++        <source>Your files are up to date</source>
++        <translation>Seus arquivos estão em dia</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/levelpanel/LevelTrayPanel.qml" line="1"/>
++        <source>Needs your attention (%1)</source>
++        <translation>Precisa da sua atenção (%1)</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/levelpanel/LevelTrayPanel.qml" line="1"/>
++        <source>Resolve</source>
++        <translation>Resolver</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/levelpanel/LevelTrayPanel.qml" line="1"/>
++        <source>Details</source>
++        <translation>Detalhes</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/levelpanel/LevelTrayPanel.qml" line="1"/>
++        <source>See all</source>
++        <translation>Ver todas</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/levelpanel/LevelTrayPanel.qml" line="1"/>
++        <source>Recent events</source>
++        <translation>Últimos eventos</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/levelpanel/LevelTrayPanel.qml" line="1"/>
++        <source>No recent events</source>
++        <translation>Nenhum evento recente</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/levelpanel/LevelTrayPanel.qml" line="1"/>
++        <source>Resume</source>
++        <translation>Retomar</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/levelpanel/LevelTrayPanel.qml" line="1"/>
++        <source>Pause</source>
++        <translation>Pausar</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/levelpanel/LevelTrayPanel.qml" line="1"/>
++        <source>Activity</source>
++        <translation>Atividades</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/levelpanel/LevelTrayPanel.qml" line="1"/>
++        <source>Settings</source>
++        <translation>Configurações</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/levelpanel/LevelTrayPanel.qml" line="1"/>
++        <source>Help</source>
++        <translation>Ajuda</translation>
++    </message>
++    <message>
++        <location filename="../src/gui/tray/levelpanel/LevelTrayPanel.qml" line="1"/>
++        <source>More</source>
++        <translation>Mais</translation>
++    </message>
++</context>
+ </TS>
+\ No newline at end of file
