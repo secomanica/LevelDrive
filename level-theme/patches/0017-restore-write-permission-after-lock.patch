@@ -1,0 +1,33 @@
+diff --git a/src/libsync/propagateupload.cpp b/src/libsync/propagateupload.cpp
+index 81eb621b4f..6b6c2aafa3 100644
+--- a/src/libsync/propagateupload.cpp
++++ b/src/libsync/propagateupload.cpp
+@@ -879,6 +879,14 @@ void PropagateUploadFileCommon::finalize()
+         }
+     }
+ 
++    // Level: the server accepted the new content, so no one else holds the file. Undo a read-only
++    // flag left behind by an earlier lock from another user (see LockFileJob::handleReply()).
++    const auto lockedByOther = _item->_locked == SyncFileItem::LockStatus::LockedItem && _item->_lockOwnerId != propagator()->account()->davUser();
++    const auto readOnlyByPermission = !_item->_remotePerm.isNull() && !_item->_remotePerm.hasPermission(RemotePermissions::CanWrite);
++    if (!_item->isDirectory() && !lockedByOther && !readOnlyByPermission) {
++        FileSystem::setFileReadOnlyWeak(propagator()->fullLocalPath(_item->_file), false);
++    }
++
+     // Remove from the progress database:
+     propagator()->_journal->setUploadInfo(_item->_file, SyncJournalDb::UploadInfo());
+     propagator()->_journal->commit("upload file start");
+diff --git a/src/libsync/syncengine.cpp b/src/libsync/syncengine.cpp
+index c053030180..cb0ab07e25 100644
+--- a/src/libsync/syncengine.cpp
++++ b/src/libsync/syncengine.cpp
+@@ -385,7 +385,8 @@ void OCC::SyncEngine::slotItemDiscovered(const OCC::SyncFileItemPtr &item)
+                 modificationHappened = true;
+             }
+ 
+-            if (item->_type == CSyncEnums::ItemTypeVirtualFile) {
++            // Level: also for hydrated files, otherwise a file stays read-only after the lock is released
++            if (item->_type == CSyncEnums::ItemTypeVirtualFile || item->_type == CSyncEnums::ItemTypeFile) {
+                 const auto lockOwnerTypeToSkipReadonly = _account->capabilities().filesLockTypeAvailable()
+                     ? SyncFileItem::LockOwnerType::TokenLock
+                     : SyncFileItem::LockOwnerType::UserLock;

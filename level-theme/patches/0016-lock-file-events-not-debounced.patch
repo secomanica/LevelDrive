@@ -1,0 +1,27 @@
+diff --git a/src/gui/folderwatcher.cpp b/src/gui/folderwatcher.cpp
+index 113759a755..d1df5075d5 100644
+--- a/src/gui/folderwatcher.cpp
++++ b/src/gui/folderwatcher.cpp
+@@ -28,6 +28,7 @@
+ #include <QMutexLocker>
+ #include <QStringList>
+ 
++#include <algorithm>
+ #include <array>
+ #include <cstdint>
+ 
+@@ -238,7 +239,13 @@ void FolderWatcher::changeDetected(const QStringList &paths)
+ 
+     // Check if the same path was reported within the last second.
+     const auto pathsSet = QSet<QString>{paths.begin(), paths.end()};
+-    if (pathsSet == _lastPaths && _timer.elapsed() < 1000) {
++    // Level: never drop a lock file (~$..., .~lock....#) event. Office creates and deletes the lock
++    // file of a document opened and closed within a second; dropping the deletion left the
++    // document locked on the server forever.
++    const auto hasLockFile = std::any_of(paths.cbegin(), paths.cend(), [](const QString &path) {
++        return !FileSystem::filePathLockFilePatternMatch(path).isEmpty();
++    });
++    if (!hasLockFile && pathsSet == _lastPaths && _timer.elapsed() < 1000) {
+         // the same path was reported within the last second. Skip.
+         return;
+     }

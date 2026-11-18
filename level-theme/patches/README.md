@@ -187,3 +187,18 @@ Para gerar ou atualizar um patch:
 - **Problema (defeito do upstream, achado no teste do painel):** o "há quanto tempo" das atividades decidia "1 dia" com `QDateTime::daysTo()` entre a hora local da atividade e o "agora" em UTC. Isso compara datas de calendário. Em UTC−3, a partir das 21h locais a data UTC já é o dia seguinte, e toda atividade aparecia como "1d", no painel e na janela de Atividades.
 - **Mudança:** "dias" agora é o tempo decorrido (`secsTo() / 86400`). O teste do upstream (`test/testutility.cpp`, `testTimeAgo`) continua válido, porque 24 h exatas ainda dão "1d".
 - **Upstream:** vale reportar ao Nextcloud.
+
+## 0016-lock-file-events-not-debounced.patch
+- **Arquivo:** `src/gui/folderwatcher.cpp`, `FolderWatcher::changeDetected()`.
+- **Problema (defeito do upstream, achado no teste de travas de 2026-11-17):** o watcher descarta um evento se o mesmo conjunto de caminhos foi reportado há menos de 1 s. Quando um documento do Office é aberto e fechado em menos de 1 s, o `~$arquivo` é criado e apagado nesse intervalo. A criação trava o arquivo no servidor, mas a exclusão é descartada, e o cliente nunca destrava. Como o servidor grava a trava automática sem prazo (`lockTimeout = 0`), o arquivo fica somente leitura para os colegas até o dono abri-lo e fechá-lo de novo.
+- **Mudança:** eventos de arquivo de trava (`FileSystem::filePathLockFilePatternMatch()`, que cobre `~$`, `.~lock.`, Affinity etc.) nunca passam pelo filtro de 1 s. O debounce de 500 ms das travas continua valendo.
+- **Teste:** `C:\suporte\teste-conflitos\simular-excel.ps1 -Segundos 0` numa pasta compartilhada; o outro usuário não pode ficar somente leitura depois de alguns segundos.
+- **Upstream:** vale reportar ao Nextcloud.
+
+## 0017-restore-write-permission-after-lock.patch
+- **Arquivos:** `src/libsync/syncengine.cpp` (`slotItemDiscovered`, ramo `UPDATE_METADATA`) e `src/libsync/propagateupload.cpp` (`PropagateUploadFileCommon::finalize()`).
+- **Problema (defeito do upstream, achado no teste de travas de 2026-11-17):** o cliente deixa o arquivo local somente leitura quando sabe que outro usuário o travou (`LockFileJob::handleReply()`, `propagatedownload.cpp`), mas só desfaz isso em dois casos: arquivo virtual (não baixado) que recebe atualização de metadados, ou download de conteúdo novo. Um arquivo **já baixado** que é destravado sem mudar de conteúdo, ou que acabou de ser enviado com sucesso pelo próprio usuário, ficava somente leitura para sempre.
+- **Mudança:**
+  - no `UPDATE_METADATA`, a regra de travas (somente leitura se travado por outro; senão, conforme a permissão do servidor) vale também para `ItemTypeFile`;
+  - depois de um envio aceito pelo servidor, se o arquivo não está travado por outro usuário e o servidor dá permissão de escrita, o somente leitura é retirado (`setFileReadOnlyWeak(..., false)`).
+- **Upstream:** vale reportar ao Nextcloud.
