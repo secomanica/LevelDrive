@@ -14,7 +14,7 @@ A árvore do Nextcloud fica **intacta** nos commits. Toda a customização está
 | Parte | O que faz |
 |---|---|
 | `level-theme/NEXTCLOUD.cmake` | Substitui o `NEXTCLOUD.cmake` do upstream. Define nome, fabricante, domínio, executável, URI `leveldrive://`, lista de servidores, cores do assistente, GUIDs próprios (convivência com o Nextcloud oficial) e opções (updater desligado, sem "Sign up"/"Self-host"). |
-| `level-theme/patches/0001–0017` | Patches mínimos no código, cada um justificado no README dos patches: bandeja, cores e fontes, créditos GPL, textos, pt-BR, instalador, idioma, Configurações, painel da bandeja (0014), horário relativo dos eventos (0015) e travas de arquivos do Office (0016–0017). |
+| `level-theme/patches/0001–0018` | Patches mínimos no código, cada um justificado no README dos patches: bandeja, cores e fontes, créditos GPL, textos, pt-BR, instalador, idioma, Configurações, painel da bandeja (0014), horário relativo dos eventos (0015) e travas de arquivos do Office (0016–0018). |
 | `level-theme/overlay/` | Ícones, estados, logo do assistente e imagens do MSI, **gerados** por `build-icons.ps1` a partir dos SVGs oficiais em `..\level-brand\`. Não editar à mão. |
 | `level-theme/overlay/src/` | Código **escrito à mão**: o painel da bandeja (`gui/tray/leveltraypanel.*` e `gui/tray/levelpanel/*.qml`), ligado ao app pelo patch 0014. O `build-icons.ps1` preserva esta pasta. |
 | `level-theme/tools/` | Scripts reprodutíveis: tema, ícones, Craft, MSI, assinatura e contraste. |

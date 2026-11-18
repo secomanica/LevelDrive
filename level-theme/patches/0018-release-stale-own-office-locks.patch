@@ -1,0 +1,151 @@
+diff --git a/src/gui/folder.cpp b/src/gui/folder.cpp
+index bbf44d4938..a80e2e7766 100644
+--- a/src/gui/folder.cpp
++++ b/src/gui/folder.cpp
+@@ -34,6 +34,8 @@
+ #include "common/utility_mac_sandbox.h"
+ #endif
+ 
++#include <QDateTime>
++#include <QFileInfo>
+ #include <QTimer>
+ #include <QUrl>
+ #include <QDir>
+@@ -49,6 +51,36 @@ namespace {
+ #define VERSION_C
+ constexpr auto versionC = "version";
+ #endif
++
++// Level (patch 0018): automatic release of our own stale office locks
++constexpr auto levelAutoLockSweepIntervalMs = 60 * 1000;
++constexpr auto levelAutoLockMinAgeSecs = 60;
++QString levelAutoLocksGroup()
++{
++    return QStringLiteral("LevelAutoLocks");
++}
++
++// Whether the document is still open here: some program holds it (Microsoft Office keeps the
++// document open while editing) or a LibreOffice lock file (.~lock.<name>#) still points to it
++// (LibreOffice does not keep the document open).
++bool levelDocumentStillOpen(const QString &documentPath)
++{
++    if (OCC::FileSystem::isFileLocked(documentPath, OCC::FileSystem::LockMode::Exclusive)) {
++        return true;
++    }
++    const QFileInfo documentInfo(documentPath);
++    const auto dir = documentInfo.dir();
++    const auto lockFiles = dir.entryList({QStringLiteral(".~lock.*")}, QDir::Files | QDir::Hidden | QDir::System);
++    for (const auto &lockFileName : lockFiles) {
++        const auto lockFilePath = dir.absoluteFilePath(lockFileName);
++        const auto pattern = OCC::FileSystem::filePathLockFilePatternMatch(lockFilePath);
++        const auto target = OCC::FileSystem::lockFileTargetFilePath(lockFilePath, pattern);
++        if (target.type == OCC::FileSystem::FileLockingInfo::Type::Locked && OCC::Utility::fileNamesEqual(target.path, documentInfo.absoluteFilePath())) {
++            return true;
++        }
++    }
++    return false;
++}
+ }
+ 
+ namespace OCC {
+@@ -122,6 +154,16 @@ Folder::Folder(const FolderDefinition &definition,
+     connect(&_scheduleSelfTimer, &QTimer::timeout,
+         this, &Folder::slotScheduleThisFolder);
+ 
++    // Level (patch 0018)
++    {
++        const auto settings = ConfigFile::settingsWithGroup(levelAutoLocksGroup());
++        const auto saved = settings->value(_definition.alias).toStringList();
++        _levelAutoLocks = QSet<QString>{saved.cbegin(), saved.cend()};
++    }
++    _levelAutoLockSweepTimer.setInterval(levelAutoLockSweepIntervalMs);
++    connect(&_levelAutoLockSweepTimer, &QTimer::timeout, this, &Folder::levelSweepAutoLocks);
++    _levelAutoLockSweepTimer.start();
++
+     connect(ProgressDispatcher::instance(), &ProgressDispatcher::folderConflicts,
+         this, &Folder::slotFolderConflicts);
+ 
+@@ -810,6 +852,55 @@ void Folder::slotFilesLockReleased(const QSet<QString> &files)
+     }
+ }
+ 
++void Folder::levelSaveAutoLocks() const
++{
++    auto settings = ConfigFile::settingsWithGroup(levelAutoLocksGroup());
++    if (_levelAutoLocks.isEmpty()) {
++        settings->remove(_definition.alias);
++    } else {
++        settings->setValue(_definition.alias, QStringList{_levelAutoLocks.cbegin(), _levelAutoLocks.cend()});
++    }
++}
++
++void Folder::levelSweepAutoLocks()
++{
++    if (_levelAutoLocks.isEmpty() || !_accountState->isConnected()) {
++        return;
++    }
++
++    const auto davUser = _accountState->account()->davUser();
++    const auto now = QDateTime::currentSecsSinceEpoch();
++    QSet<QString> toUnlock;
++    auto changed = false;
++
++    for (auto it = _levelAutoLocks.begin(); it != _levelAutoLocks.end();) {
++        SyncJournalFileRecord rec;
++        const auto stillOurLock = journalDb()->getFileRecord(*it, &rec) && rec.isValid() && rec._lockstate._locked
++            && rec._lockstate._lockOwnerType == static_cast<qint64>(SyncFileItem::LockOwnerType::TokenLock)
++            && rec._lockstate._lockOwnerId == davUser;
++        if (!stillOurLock) {
++            // released, expired or taken by someone else: nothing left to do for it
++            it = _levelAutoLocks.erase(it);
++            changed = true;
++            continue;
++        }
++
++        const auto localFilePath = path() + *it;
++        if (now - rec._lockstate._lockTime >= levelAutoLockMinAgeSecs && !levelDocumentStillOpen(localFilePath)) {
++            qCInfo(lcFolder) << "Level: document no longer open, releasing our lock" << localFilePath;
++            toUnlock.insert(localFilePath);
++        }
++        ++it;
++    }
++
++    if (changed) {
++        levelSaveAutoLocks();
++    }
++    if (!toUnlock.isEmpty()) {
++        slotFilesLockReleased(toUnlock);
++    }
++}
++
+ void Folder::slotFilesLockImposed(const QSet<QString> &files)
+ {
+     qCDebug(lcFolder) << "Lock files detected for office files" << files;
+@@ -841,6 +932,9 @@ void Folder::slotLockedFilesFound(const QSet<QString> &files)
+ 
+         const QString remoteFilePath = remotePathTrailingSlash() + rec.path();
+         qCDebug(lcFolder) << "Automatically locking file on server" << remoteFilePath;
++        // Level (patch 0018): remember that this client asked for the lock
++        _levelAutoLocks.insert(rec.path());
++        levelSaveAutoLocks();
+         _fileLockSuccess = connect(_accountState->account().data(), &Account::lockFileSuccess, this, [this, remoteFilePath] {
+             disconnect(_fileLockSuccess);
+             disconnect(_fileLockFailure);
+diff --git a/src/gui/folder.h b/src/gui/folder.h
+index a7ffa206b7..ea0b71bd58 100644
+--- a/src/gui/folder.h
++++ b/src/gui/folder.h
+@@ -663,6 +663,13 @@ private:
+     QMetaObject::Connection _fileLockSuccess;
+     QMetaObject::Connection _fileLockFailure;
+ 
++    // Level (patch 0018): server locks this client created for opened office documents.
++    // Swept periodically: a lock whose document is no longer open here is released.
++    void levelSweepAutoLocks();
++    void levelSaveAutoLocks() const;
++    QSet<QString> _levelAutoLocks;
++    QTimer _levelAutoLockSweepTimer;
++
+     /// The remote file ID of the current folder.
+     qint64 _rootFileId = 0;
+ };

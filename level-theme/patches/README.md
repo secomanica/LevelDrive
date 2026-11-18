@@ -202,3 +202,15 @@ Para gerar ou atualizar um patch:
   - no `UPDATE_METADATA`, a regra de travas (somente leitura se travado por outro; senão, conforme a permissão do servidor) vale também para `ItemTypeFile`;
   - depois de um envio aceito pelo servidor, se o arquivo não está travado por outro usuário e o servidor dá permissão de escrita, o somente leitura é retirado (`setFileReadOnlyWeak(..., false)`).
 - **Upstream:** vale reportar ao Nextcloud.
+
+## 0018-release-stale-own-office-locks.patch
+- **Arquivos:** `src/gui/folder.h` e `src/gui/folder.cpp`.
+- **Problema:** a trava automática só sai quando o cliente vê o `~$` ser apagado. Se o Office é fechado à força (travamento, Gerenciador de Tarefas, queda de energia), o `~$` fica, o evento nunca vem, e a trava no servidor não expira (`lockTimeout = 0`). O 0016 não cobre esse caso.
+- **Mudança (autodestrave):**
+  - o cliente guarda os arquivos que **ele mesmo** travou ao ver um `~$`. A lista fica no grupo `LevelAutoLocks` do `leveldrive.cfg`, por pasta (alias), e sobrevive a reinícios;
+  - a cada 60 s, para cada um: se o journal mostra que a trava ainda é deste usuário (`TokenLock`), tem mais de 60 s e o documento **não está mais aberto aqui**, o cliente destrava pelo mesmo caminho do fechamento normal (`slotFilesLockReleased`);
+  - "não está mais aberto" quer dizer: nenhum programa segura o arquivo (`FileSystem::isFileLocked(..., Exclusive)`; o Office mantém o documento aberto enquanto edita) e não existe trava do LibreOffice (`.~lock.<nome>#`, que não segura o arquivo). Um `~$` sozinho, sem ninguém segurando o documento, é considerado resto de um Office fechado à força;
+  - travas que saíram, expiraram ou são de outro usuário somem da lista.
+- **Por que só as travas criadas por este cliente:** o mesmo usuário em dois PCs gera travas com o mesmo dono. Sem a lista, o PC2 destravaria o arquivo aberto no PC1.
+- **Teste (2026-11-17):** `simular-excel.ps1` encerrado à força deixou o `~$` para trás; o cliente destravou 77 s depois. Com o arquivo aberto por 4 min, a trava ficou o tempo todo.
+- **Limite conhecido:** um programa que abre o documento, fecha o arquivo e mantém só um `~$` (sem segurar o documento) teria a trava liberada depois de 60 s. Nesse caso o comportamento volta a ser o do upstream sem trava: em edição simultânea, gera cópia de conflito.

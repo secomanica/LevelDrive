@@ -237,7 +237,7 @@ Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<
 | 6 Build e instalador | Concluída (2026-11-12): Release via Craft, patch 0011, `build-msi.ps1` → `LevelDrive-35.0.3.0-x64.msi` com pt-BR; assinatura via eSigner executada em 2026-11-13 (escopo Level) |
 | 7 Validação | Concluída neste servidor (2026-11-12): checklist em `level-theme/docs/fase7-validacao.md`; patches 0012 (idioma pt-BR) e 0013 (cores das Configurações); `LEVEL-BRANDING.md` entregue. Pendentes: login/sync com usuário de teste e Win10/11 reais |
 | Painel da bandeja | Concluído e aprovado pelo usuário (2026-11-13): patches 0014 (painel) e 0015 (horário relativo), traduções no 0010 |
-| Travas e conflitos | Em andamento (2026-11-17): teste com duas contas (ricardo.manica e teste01, pasta HOMOLOGACAO). Conflito comum não para a sincronia. Patches 0016 (trava presa ao abrir/fechar em < 1 s) e 0017 (somente leitura que sobrava) testados com binários trocados à mão; ainda sem MSI. Pendentes: autodestrave (patch 2 proposto), prazo de expiração das travas no servidor, corrida dos dois abrindo juntos, validar com Excel real |
+| Travas e conflitos | Em andamento (2026-11-17): teste com duas contas (ricardo.manica e teste01, pasta HOMOLOGACAO). Conflito comum não para a sincronia. Patches 0016 (trava presa ao abrir/fechar em < 1 s), 0017 (somente leitura que sobrava) e 0018 (autodestrave das próprias travas cujo documento já fechou) testados com binários trocados à mão; ainda sem MSI. Pendentes: prazo de expiração das travas no servidor, corrida dos dois abrindo juntos, validar com Excel real |
 
 ## Testes de travas e conflitos (2026-11-17)
 - Scripts em `C:\suporte\teste-conflitos\` (fora do repositório):
