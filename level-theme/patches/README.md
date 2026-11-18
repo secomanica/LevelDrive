@@ -140,6 +140,7 @@ Para gerar ou atualizar um patch:
   - Crédito em pt-BR, exato como no briefing: "Baseado no Nextcloud Desktop Client, licenciado sob GPLv2."
   - Acrescenta as traduções do painel da bandeja (0014): contextos `OCC::LevelTrayPanel` (C++) e `LevelTrayPanel` (QML), com formas de plural.
   - Tempo relativo das atividades com espaço: "1 min", "2 h", "1 d" (o upstream traz "1min", "2h", "1d").
+  - Acrescenta os avisos de trava do 0021 (contexto `OCC::Folder`).
 - **Outros idiomas:** caem no texto em inglês até serem traduzidos.
 
 ## 0012-pt-br-language-selection.patch
@@ -237,3 +238,17 @@ Para gerar ou atualizar um patch:
 - **Mudança:** se o estado da trava (travado ou não, ou o dono) difere entre o journal e o servidor, o arquivo recebe `UPDATE_METADATA`. Isso grava a trava nova, e o 0017 ajusta o somente leitura.
 - **Complementa:** a renovação periódica das travas de outros usuários no 0018, que garante que a pasta seja consultada de novo.
 - **Upstream:** vale reportar ao Nextcloud.
+
+## 0021-notify-lost-lock-race.patch
+- **Arquivos:** `src/gui/folder.h` e `src/gui/folder.cpp` (`slotLockedFilesFound`, `levelTrackForeignLock`). Aplicar depois do 0018 e do 0019 (mesmos arquivos). As traduções estão no 0010.
+- **Problema:**
+  - entre alguém abrir uma planilha e a trava chegar ao PC do colega passam até ~50 s. Se o colega abrir nesse intervalo, o Excel abre editável e, ao salvar, só mostra "Salvar como", sem dizer o motivo;
+  - o pedido de trava do colega é recusado pelo servidor em ~1 s. O upstream emite `Account::lockFileError` para o `Systray::showErrorMessageDialog`, mas nenhuma tela escuta esse sinal: o usuário não vê nada.
+- **Mudança:** quando o pedido automático de trava é recusado e o arquivo está travado por outra pessoa, aparece um aviso na bandeja do Windows:
+  - título: "planilha.xlsx já está aberto por Fulano";
+  - texto: "Fulano abriu antes. Suas alterações não poderão ser salvas no original: salve uma cópia com outro nome.";
+  - quando a recusa é 423, o dono já vem na resposta. No teste, porém, a recusa foi **412**: a trava do outro mudou a etag. Nesse caso o arquivo é marcado como "corrida perdida", a pasta é consultada de novo, e o aviso sai quando a sincronização traz o dono (até 2 min). No teste, isso levou ~2,4 s depois da abertura;
+  - um aviso por arquivo por minuto;
+  - nas travas automáticas, o servidor acrescenta o nome do cliente ao dono ("Ricardo Manica (Cliente Desktop)"); esse sufixo é retirado;
+  - também há aviso "está em uso por Fulano" quando um arquivo de trava aparece para um documento que o journal já sabe travado por outro. Na prática, Excel e LibreOffice **não** criam arquivo de trava ao abrir somente leitura (testado), então esse caso é raro.
+- **Teste (2026-11-18):** corridas Excel+Excel, Excel→LibreOffice e LibreOffice→Excel. O aviso apareceu para quem abriu depois, e só para essa pessoa.

@@ -237,7 +237,7 @@ Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<
 | 6 Build e instalador | Concluída (2026-11-12): Release via Craft, patch 0011, `build-msi.ps1` → `LevelDrive-35.0.3.0-x64.msi` com pt-BR; assinatura via eSigner executada em 2026-11-13 (escopo Level) |
 | 7 Validação | Concluída neste servidor (2026-11-12): checklist em `level-theme/docs/fase7-validacao.md`; patches 0012 (idioma pt-BR) e 0013 (cores das Configurações); `LEVEL-BRANDING.md` entregue. Pendentes: login/sync com usuário de teste e Win10/11 reais |
 | Painel da bandeja | Concluído e aprovado pelo usuário (2026-11-13): patches 0014 (painel) e 0015 (horário relativo), traduções no 0010 |
-| Travas e conflitos | Em andamento (2026-11-17): teste com duas contas (ricardo.manica e teste01, pasta HOMOLOGACAO). Conflito comum não para a sincronia. Patches 0016–0020 validados com Excel 365 e LibreOffice 26.8 reais (2026-11-18), com binários trocados à mão; ainda sem MSI. Pendentes: prazo de expiração das travas no servidor (o responsável está analisando); aviso ao usuário quando abre um arquivo que acabou de ser travado por outro (janela de até ~50 s); temporários do Excel (8 hex) que sobem quando um salvamento falha |
+| Travas e conflitos | Em andamento (2026-11-17): teste com duas contas (ricardo.manica e teste01, pasta HOMOLOGACAO). Conflito comum não para a sincronia. Patches 0016–0021 validados com Excel 365 e LibreOffice 26.8 reais (2026-11-18), com binários trocados à mão; ainda sem MSI. O 0021 avisa na bandeja quem abre um arquivo que acabou de ser travado por outro. Pendentes: prazo de expiração das travas no servidor (o responsável está analisando); temporários do Excel (8 hex) que sobem quando um salvamento falha |
 
 ## Testes de travas e conflitos (2026-11-17)
 - Scripts em `C:\suporte\teste-conflitos\` (fora do repositório):
@@ -252,5 +252,9 @@ Os valores provisórios ficam em `level-theme/NEXTCLOUD.cmake`, marcados com `<<
   - Excel cria `~$` e segura o arquivo. O Windows apaga o `~$` quando o Excel cai;
   - LibreOffice cria `.~lock.<nome>#` e também segura o arquivo; se cai, o `.~lock` fica;
   - quem abre o arquivo antes de a trava chegar ao PC dele (até ~50 s) abre editável. Ao salvar, o Excel não consegue gravar e mostra "Salvar como". O temporário do Excel (8 caracteres hexadecimais, sem extensão) sobe para o servidor e é a única cópia dessa edição;
-  - defeitos achados e corrigidos: envio perdido depois de salvar durante a trava (0019) e trava fantasma no colega quando o servidor tira a trava sem nova etag (0018 + 0020).
+  - defeitos achados e corrigidos: envio perdido depois de salvar durante a trava (0019) e trava fantasma no colega quando o servidor tira a trava sem nova etag (0018 + 0020);
+  - na corrida, o LOCK de quem chega depois volta **412** (a trava do outro mudou a etag), não 423. O dono só chega na sincronização seguinte. O aviso do 0021 espera por ela;
+  - Excel e LibreOffice não criam arquivo de trava ao abrir um arquivo somente leitura. O cliente não tem como saber dessa abertura;
+  - o `Systray::showErrorMessageDialog` do upstream não tem quem o escute no QML: os erros de trava do upstream não aparecem para o usuário;
+  - log em arquivo para testes: `leveldrive.exe --background --logdir <pasta>`. Os logs giram e são compactados (`.gz`).
 - Os binários assinados originais (`leveldrive.exe` e `leveldrivesync.dll`) estão em `C:\suporte\teste-conflitos\backup-binarios-assinados`. A instalação atual está com binários de teste **sem assinatura**: reinstale um MSI para voltar ao normal.

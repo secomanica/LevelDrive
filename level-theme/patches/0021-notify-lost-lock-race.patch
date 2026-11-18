@@ -1,0 +1,141 @@
+diff --git a/src/gui/folder.h b/src/gui/folder.h
+index 74e0fd3..98f4f7d 100644
+--- a/src/gui/folder.h
++++ b/src/gui/folder.h
+@@ -680,6 +680,15 @@ private:
+     // Level (patch 0019): startSync() was called and the engine start is still queued
+     bool _levelSyncStartQueued = false;
+ 
++    // Level (patch 0021): tell the user that a document they just opened is locked by someone else.
++    // lostRace: the document was opened before this client knew about the lock, so it is editable
++    // here but cannot be saved over the original.
++    void levelNotifyLockedByOther(const QString &recordPath, const QString &owner, bool lostRace);
++    QHash<QString, qint64> _levelLockNoticeShown;
++    // Our lock request was refused before the other lock was known here (record path -> time);
++    // the notice is shown when the sync reports who holds the lock.
++    QHash<QString, qint64> _levelLostLockRaces;
++
+     /// The remote file ID of the current folder.
+     qint64 _rootFileId = 0;
+ };
+diff --git a/src/gui/folder.cpp b/src/gui/folder.cpp
+index 2242746..44ca5c7 100644
+--- a/src/gui/folder.cpp
++++ b/src/gui/folder.cpp
+@@ -28,6 +28,7 @@
+ #include "common/vfs.h"
+ #include "creds/abstractcredentials.h"
+ #include "settingsdialog.h"
++#include "systray.h"
+ #include "vfsdownloaderrordialog.h"
+ 
+ #ifdef Q_OS_MACOS
+@@ -116,6 +117,20 @@ bool levelDocumentStillOpen(const QString &documentPath)
+     }
+     return false;
+ }
++
++// Level (patch 0021): the name shown for whoever holds a lock
++QString levelLockOwnerName(const QString &displayName, const QString &editorApp, const QString &ownerId, int ownerType)
++{
++    if (!displayName.isEmpty()) {
++        // the server appends the client name, e.g. " (Desktop Client)", to the owner of a token lock
++        const auto suffixStart = displayName.lastIndexOf(QStringLiteral(" ("));
++        if (ownerType == static_cast<int>(OCC::SyncFileItem::LockOwnerType::TokenLock) && suffixStart > 0 && displayName.endsWith(QLatin1Char(')'))) {
++            return displayName.left(suffixStart);
++        }
++        return displayName;
++    }
++    return editorApp.isEmpty() ? ownerId : editorApp;
++}
+ }
+ 
+ namespace OCC {
+@@ -909,6 +924,14 @@ void Folder::levelTrackForeignLock(const SyncFileItemPtr &item)
+     const auto lockedByOther = item->_locked == SyncFileItem::LockStatus::LockedItem && item->_lockOwnerId != _accountState->account()->davUser();
+     if (lockedByOther) {
+         _levelForeignLocks.insert(item->_file);
++        // Level (patch 0021): a lock request refused in the last two minutes lost a race to this owner
++        const auto raceTime = _levelLostLockRaces.take(item->_file);
++        if (raceTime > 0 && QDateTime::currentSecsSinceEpoch() - raceTime < 120) {
++            levelNotifyLockedByOther(
++                item->_file,
++                levelLockOwnerName(item->_lockOwnerDisplayName, item->_lockEditorApp, item->_lockOwnerId, static_cast<int>(item->_lockOwnerType)),
++                true);
++        }
+     } else {
+         _levelForeignLocks.remove(item->_file);
+     }
+@@ -1023,6 +1046,15 @@ void Folder::slotLockedFilesFound(const QSet<QString> &files)
+         if (!canLockFile) {
+             qCDebug(lcFolder) << "Skipping locking file" << file << "with rec.isValid():" << rec.isValid()
+                               << "and rec._lockstate._lockOwnerId:" << rec._lockstate._lockOwnerId << "and davUser:" << _accountState->account()->davUser();
++            // Level (patch 0021): opened while someone else holds the lock
++            if (rec.isValid() && rec._lockstate._locked && rec._lockstate._lockOwnerId != _accountState->account()->davUser()) {
++                levelNotifyLockedByOther(rec.path(),
++                                         levelLockOwnerName(rec._lockstate._lockOwnerDisplayName,
++                                                            rec._lockstate._lockEditorApp,
++                                                            rec._lockstate._lockOwnerId,
++                                                            rec._lockstate._lockOwnerType),
++                                         false);
++            }
+             continue;
+         }
+ 
+@@ -1044,6 +1076,22 @@ void Folder::slotLockedFilesFound(const QSet<QString> &files)
+                 qCWarning(lcFolder) << "Failed to lock a file:" << remoteFilePath << message;
+                 // Level (patch 0018): probably locked by someone else; keep its lock state fresh
+                 _levelForeignLocks.insert(recordPath);
++                // Level (patch 0021): a 423 stores the owner in the journal right away; after a 412
++                // (the etag changed with the other lock) the owner arrives with the next sync
++                SyncJournalFileRecord lockedRecord;
++                if (_journal.getFileRecord(recordPath, &lockedRecord) && lockedRecord.isValid() && lockedRecord._lockstate._locked
++                    && lockedRecord._lockstate._lockOwnerId != _accountState->account()->davUser()) {
++                    levelNotifyLockedByOther(recordPath,
++                                             levelLockOwnerName(lockedRecord._lockstate._lockOwnerDisplayName,
++                                                                lockedRecord._lockstate._lockEditorApp,
++                                                                lockedRecord._lockstate._lockOwnerId,
++                                                                lockedRecord._lockstate._lockOwnerType),
++                                             true);
++                } else {
++                    _levelLostLockRaces.insert(recordPath, QDateTime::currentSecsSinceEpoch());
++                    _journal.schedulePathForRemoteDiscovery(recordPath);
++                    scheduleThisFolderSoon();
++                }
+             });
+         _accountState->account()->setLockFileState(remoteFilePath,
+                                                    remotePathTrailingSlash(),
+@@ -1055,6 +1103,33 @@ void Folder::slotLockedFilesFound(const QSet<QString> &files)
+     }
+ }
+ 
++void Folder::levelNotifyLockedByOther(const QString &recordPath, const QString &owner, bool lostRace)
++{
++    // Lock files come and go while a document is open; one notice per document and minute is enough
++    const auto now = QDateTime::currentSecsSinceEpoch();
++    const auto lastShown = _levelLockNoticeShown.value(recordPath, 0);
++    if (now - lastShown < 60) {
++        return;
++    }
++    _levelLockNoticeShown.insert(recordPath, now);
++
++    const auto fileName = QFileInfo(recordPath).fileName();
++
++    qCInfo(lcFolder) << "Level: document opened while locked by" << owner << recordPath << "lostRace:" << lostRace;
++    if (!Systray::instance()) {
++        return;
++    }
++    if (lostRace) {
++        Systray::instance()->showMessage(tr("%1 is already open by %2").arg(fileName, owner),
++                                         tr("%1 opened it first. Your changes cannot be saved to the original: save a copy with another name.").arg(owner),
++                                         QSystemTrayIcon::Warning);
++    } else {
++        Systray::instance()->showMessage(tr("%1 is in use by %2").arg(fileName, owner),
++                                         tr("The file opens read-only until %1 closes it.").arg(owner),
++                                         QSystemTrayIcon::Information);
++    }
++}
++
+ void Folder::implicitlyHydrateFile(const QString &relativepath)
+ {
+     qCInfo(lcFolder) << "Implicitly hydrate virtual file:" << relativepath;
