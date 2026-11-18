@@ -1,16 +1,22 @@
 diff --git a/src/gui/folder.cpp b/src/gui/folder.cpp
-index bbf44d4938..a80e2e7766 100644
+index bbf44d4938..f95ebe96fc 100644
 --- a/src/gui/folder.cpp
 +++ b/src/gui/folder.cpp
-@@ -34,6 +34,8 @@
+@@ -34,10 +34,12 @@
  #include "common/utility_mac_sandbox.h"
  #endif
  
+-#include <QTimer>
+-#include <QUrl>
 +#include <QDateTime>
-+#include <QFileInfo>
- #include <QTimer>
- #include <QUrl>
  #include <QDir>
++#include <QFileInfo>
+ #include <QSettings>
++#include <QTimer>
++#include <QUrl>
+ 
+ #include <QMessageBox>
+ #include <QPushButton>
 @@ -49,6 +51,36 @@ namespace {
  #define VERSION_C
  constexpr auto versionC = "version";
@@ -65,7 +71,7 @@ index bbf44d4938..a80e2e7766 100644
      connect(ProgressDispatcher::instance(), &ProgressDispatcher::folderConflicts,
          this, &Folder::slotFolderConflicts);
  
-@@ -810,6 +852,55 @@ void Folder::slotFilesLockReleased(const QSet<QString> &files)
+@@ -810,6 +852,54 @@ void Folder::slotFilesLockReleased(const QSet<QString> &files)
      }
  }
  
@@ -93,8 +99,7 @@ index bbf44d4938..a80e2e7766 100644
 +    for (auto it = _levelAutoLocks.begin(); it != _levelAutoLocks.end();) {
 +        SyncJournalFileRecord rec;
 +        const auto stillOurLock = journalDb()->getFileRecord(*it, &rec) && rec.isValid() && rec._lockstate._locked
-+            && rec._lockstate._lockOwnerType == static_cast<qint64>(SyncFileItem::LockOwnerType::TokenLock)
-+            && rec._lockstate._lockOwnerId == davUser;
++            && rec._lockstate._lockOwnerType == static_cast<qint64>(SyncFileItem::LockOwnerType::TokenLock) && rec._lockstate._lockOwnerId == davUser;
 +        if (!stillOurLock) {
 +            // released, expired or taken by someone else: nothing left to do for it
 +            it = _levelAutoLocks.erase(it);
@@ -121,7 +126,7 @@ index bbf44d4938..a80e2e7766 100644
  void Folder::slotFilesLockImposed(const QSet<QString> &files)
  {
      qCDebug(lcFolder) << "Lock files detected for office files" << files;
-@@ -841,6 +932,9 @@ void Folder::slotLockedFilesFound(const QSet<QString> &files)
+@@ -841,6 +931,9 @@ void Folder::slotLockedFilesFound(const QSet<QString> &files)
  
          const QString remoteFilePath = remotePathTrailingSlash() + rec.path();
          qCDebug(lcFolder) << "Automatically locking file on server" << remoteFilePath;
