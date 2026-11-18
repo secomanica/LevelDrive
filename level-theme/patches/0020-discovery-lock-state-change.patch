@@ -1,0 +1,19 @@
+diff --git a/src/libsync/discovery.cpp b/src/libsync/discovery.cpp
+index 792cc93464..2e4b7d9f05 100644
+--- a/src/libsync/discovery.cpp
++++ b/src/libsync/discovery.cpp
+@@ -938,6 +938,14 @@ void ProcessDirectoryJob::processFileAnalyzeRemoteInfo(const SyncFileItemPtr &it
+             item->_modtime = serverEntry.modtime;
+             item->_size = sizeOnServer;
+             item->_instruction = CSYNC_INSTRUCTION_UPDATE_METADATA;
++        } else if (!serverEntry.isDirectory
++                   && (dbEntry._lockstate._locked != (serverEntry.locked == SyncFileItem::LockStatus::LockedItem)
++                       || (dbEntry._lockstate._locked && dbEntry._lockstate._lockOwnerId != serverEntry.lockOwnerId))) {
++            // Level (patch 0020): the lock changed on the server without a new etag (e.g. it was
++            // released by a save or expired). Update the record, so a file no longer locked by
++            // someone else stops being read-only here.
++            item->_instruction = CSYNC_INSTRUCTION_UPDATE_METADATA;
++            item->_direction = SyncFileItem::Down;
+         } else if (dbEntry._remotePerm != serverEntry.remotePerm || dbEntry._fileId != serverEntry.fileId || metaDataSizeNeedsUpdateForE2EeFilePlaceholder) {
+             if (metaDataSizeNeedsUpdateForE2EeFilePlaceholder) {
+                 // we are updating placeholder sizes after migrating from older versions with VFS + E2EE implicit hydration not supported

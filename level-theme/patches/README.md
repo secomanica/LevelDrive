@@ -209,8 +209,31 @@ Para gerar ou atualizar um patch:
 - **Mudança (autodestrave):**
   - o cliente guarda os arquivos que **ele mesmo** travou ao ver um `~$`. A lista fica no grupo `LevelAutoLocks` do `leveldrive.cfg`, por pasta (alias), e sobrevive a reinícios;
   - a cada 60 s, para cada um: se o journal mostra que a trava ainda é deste usuário (`TokenLock`), tem mais de 60 s e o documento **não está mais aberto aqui**, o cliente destrava pelo mesmo caminho do fechamento normal (`slotFilesLockReleased`);
-  - "não está mais aberto" quer dizer: nenhum programa segura o arquivo (`FileSystem::isFileLocked(..., Exclusive)`; o Office mantém o documento aberto enquanto edita) e não existe trava do LibreOffice (`.~lock.<nome>#`, que não segura o arquivo). Um `~$` sozinho, sem ninguém segurando o documento, é considerado resto de um Office fechado à força;
+  - "não está mais aberto" quer dizer:
+    - nenhum programa segura o arquivo (`FileSystem::isFileLocked(..., Exclusive)`; o Excel e o LibreOffice atual seguram o documento enquanto ele está aberto);
+    - e não existe trava do LibreOffice (`.~lock.<nome>#`) com o LibreOffice (`soffice.bin`/`soffice.exe`) rodando nesta máquina. O LibreOffice pode ser configurado para não segurar o documento, e um LibreOffice fechado à força deixa o `.~lock` para trás;
+    - um `~$` sozinho, sem ninguém segurando o documento, é considerado resto de um Office fechado à força. Na prática o Windows apaga o `~$` quando o Excel cai, e a trava sai pelo caminho normal;
   - travas que saíram, expiraram ou são de outro usuário somem da lista.
+- **Travas de outros usuários (mesma rotina):** o cliente também guarda os arquivos que o journal registra como travados por outra pessoa. A lista vem da descoberta, das respostas de LOCK recusadas e, uma vez por execução, do journal inteiro. A cada 2 min, enquanto houver algum, ele pede ao servidor a pasta de novo (`schedulePathForRemoteDiscovery`). Motivo: no teste de 2026-11-18 o servidor tirou a trava sem mudar a etag (o UNLOCK do dono voltou 412), e o colega ficou com o arquivo somente leitura por tempo indeterminado. Com isto e o 0020, a trava fantasma saiu em cerca de 1 min.
 - **Por que só as travas criadas por este cliente:** o mesmo usuário em dois PCs gera travas com o mesmo dono. Sem a lista, o PC2 destravaria o arquivo aberto no PC1.
-- **Teste (2026-11-17):** `simular-excel.ps1` encerrado à força deixou o `~$` para trás; o cliente destravou 77 s depois. Com o arquivo aberto por 4 min, a trava ficou o tempo todo.
+- **Testes:**
+  - 2026-11-17: `simular-excel.ps1` encerrado à força deixou o `~$` para trás; o cliente destravou 77 s depois. Com o arquivo aberto por 4 min, a trava ficou o tempo todo.
+  - 2026-11-18, com LibreOffice 26.8 real: aberto por 100 s, a trava ficou; fechado à força, a trava saiu em 42 s.
 - **Limite conhecido:** um programa que abre o documento, fecha o arquivo e mantém só um `~$` (sem segurar o documento) teria a trava liberada depois de 60 s. Nesse caso o comportamento volta a ser o do upstream sem trava: em edição simultânea, gera cópia de conflito.
+
+## 0019-no-double-sync-start.patch
+- **Arquivos:** `src/gui/folder.h` e `src/gui/folder.cpp`, `Folder::startSync()`. Aplicar depois do 0018 (mesmos arquivos).
+- **Problema (defeito do upstream, achado com Excel e LibreOffice reais em 2026-11-18):**
+  - a resposta de LOCK/UNLOCK chama `startSync()` direto, e as conexões dessas respostas se acumulam. Assim, duas chamadas podem cair na mesma passada do loop de eventos;
+  - `isBusy()` ainda é falso na segunda, porque o motor só começa na passada seguinte (`invokeMethod` em fila). Então a segunda refaz a preparação: o `LocalDiscoveryTracker` entrega a lista de arquivos alterados já vazia, e o motor recebe opções de descoberta sem eles;
+  - resultado no teste: a planilha salva no Excel ou no LibreOffice durante a trava **não era enviada**. Ficava esperando a varredura completa (1 h por padrão) ou um reinício.
+- **Mudança:** um indicador marca que o início do motor já está na fila. Um segundo `startSync()` nesse intervalo é ignorado (com log), e o motor é iniciado por um lambda que limpa o indicador.
+- **Teste:** com o patch, o salvamento no Excel subiu em 4 s com a trava ativa, e o do LibreOffice em 6 s; o colega recebeu os dois.
+- **Upstream:** vale reportar ao Nextcloud.
+
+## 0020-discovery-lock-state-change.patch
+- **Arquivo:** `src/libsync/discovery.cpp`, `ProcessDirectoryJob::processFileAnalyzeRemoteInfo()`.
+- **Problema (defeito do upstream):** a descoberta só atualiza o registro de um arquivo quando a etag, a data, as permissões ou o fileid mudam. Se a trava muda no servidor sem etag nova (vista no teste: trava tirada por um salvamento, UNLOCK do dono com 412), o journal do colega continua "travado por fulano" e o arquivo continua somente leitura.
+- **Mudança:** se o estado da trava (travado ou não, ou o dono) difere entre o journal e o servidor, o arquivo recebe `UPDATE_METADATA`. Isso grava a trava nova, e o 0017 ajusta o somente leitura.
+- **Complementa:** a renovação periódica das travas de outros usuários no 0018, que garante que a pasta seja consultada de novo.
+- **Upstream:** vale reportar ao Nextcloud.

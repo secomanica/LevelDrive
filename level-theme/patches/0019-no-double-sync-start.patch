@@ -1,0 +1,49 @@
+diff --git a/src/gui/folder.cpp b/src/gui/folder.cpp
+index a32a3e3..2242746 100644
+--- a/src/gui/folder.cpp
++++ b/src/gui/folder.cpp
+@@ -1383,6 +1383,14 @@ void Folder::startSync(const QStringList &pathList)
+         qCCritical(lcFolder) << "ERROR csync is still running and new sync requested.";
+         return;
+     }
++    // Level (patch 0019): the engine starts on the next event loop pass, so isBusy() is still false
++    // for a second startSync() in the same pass (e.g. two lock/unlock replies). Running the setup
++    // again would hand the engine an empty list of locally changed paths and the changes found by
++    // the folder watcher (e.g. a document just saved) would not be uploaded.
++    if (_levelSyncStartQueued) {
++        qCInfo(lcFolder) << "Level: a sync start is already queued, ignoring new request";
++        return;
++    }
+ 
+     _timeSinceLastSyncStart.start();
+     _syncResult.setStatus(SyncResult::SyncPrepare);
+@@ -1438,7 +1446,15 @@ void Folder::startSync(const QStringList &pathList)
+ 
+     correctPlaceholderFiles();
+ 
+-    QMetaObject::invokeMethod(_engine.data(), "startSync", Qt::QueuedConnection);
++    // Level (patch 0019): remember that the engine start is queued, see the check above
++    _levelSyncStartQueued = true;
++    QMetaObject::invokeMethod(
++        this,
++        [this] {
++            _levelSyncStartQueued = false;
++            _engine->startSync();
++        },
++        Qt::QueuedConnection);
+ 
+     Q_EMIT syncStarted();
+ }
+diff --git a/src/gui/folder.h b/src/gui/folder.h
+index 5542628..74e0fd3 100644
+--- a/src/gui/folder.h
++++ b/src/gui/folder.h
+@@ -677,6 +677,8 @@ private:
+     bool _levelForeignLocksSeeded = false;
+     qint64 _levelForeignLocksLastRefresh = 0;
+ 
++    // Level (patch 0019): startSync() was called and the engine start is still queued
++    bool _levelSyncStartQueued = false;
+ 
+     /// The remote file ID of the current folder.
+     qint64 _rootFileId = 0;

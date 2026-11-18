@@ -1,13 +1,20 @@
 diff --git a/src/gui/folder.cpp b/src/gui/folder.cpp
-index bbf44d4938..f95ebe96fc 100644
+index bbf44d4..a32a3e3 100644
 --- a/src/gui/folder.cpp
 +++ b/src/gui/folder.cpp
-@@ -34,10 +34,12 @@
+@@ -34,10 +34,19 @@
  #include "common/utility_mac_sandbox.h"
  #endif
  
 -#include <QTimer>
 -#include <QUrl>
++#ifdef Q_OS_WIN
++// clang-format off
++#include <windows.h>
++#include <tlhelp32.h>
++// clang-format on
++#endif
++
 +#include <QDateTime>
  #include <QDir>
 +#include <QFileInfo>
@@ -17,7 +24,7 @@ index bbf44d4938..f95ebe96fc 100644
  
  #include <QMessageBox>
  #include <QPushButton>
-@@ -49,6 +51,36 @@ namespace {
+@@ -49,6 +58,64 @@ namespace {
  #define VERSION_C
  constexpr auto versionC = "version";
  #endif
@@ -25,18 +32,46 @@ index bbf44d4938..f95ebe96fc 100644
 +// Level (patch 0018): automatic release of our own stale office locks
 +constexpr auto levelAutoLockSweepIntervalMs = 60 * 1000;
 +constexpr auto levelAutoLockMinAgeSecs = 60;
++constexpr auto levelForeignLockRefreshSecs = 120;
 +QString levelAutoLocksGroup()
 +{
 +    return QStringLiteral("LevelAutoLocks");
 +}
 +
-+// Whether the document is still open here: some program holds it (Microsoft Office keeps the
-+// document open while editing) or a LibreOffice lock file (.~lock.<name>#) still points to it
-+// (LibreOffice does not keep the document open).
++// Whether LibreOffice is running on this machine. A crashed LibreOffice leaves its lock file behind,
++// so a lock file only counts while the program runs.
++bool levelLibreOfficeRunning()
++{
++#ifdef Q_OS_WIN
++    const auto snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
++    if (snapshot == INVALID_HANDLE_VALUE) {
++        return true; // unknown: keep the lock
++    }
++    PROCESSENTRY32W entry{};
++    entry.dwSize = sizeof(entry);
++    auto running = false;
++    for (auto ok = Process32FirstW(snapshot, &entry); ok && !running; ok = Process32NextW(snapshot, &entry)) {
++        const auto name = QString::fromWCharArray(entry.szExeFile);
++        running =
++            name.compare(QStringLiteral("soffice.bin"), Qt::CaseInsensitive) == 0 || name.compare(QStringLiteral("soffice.exe"), Qt::CaseInsensitive) == 0;
++    }
++    CloseHandle(snapshot);
++    return running;
++#else
++    return true;
++#endif
++}
++
++// Whether the document is still open here: some program holds it (Microsoft Office and current
++// LibreOffice keep the document open while editing) or a LibreOffice lock file (.~lock.<name>#)
++// still points to it while LibreOffice runs (LibreOffice can be set not to hold the document).
 +bool levelDocumentStillOpen(const QString &documentPath)
 +{
 +    if (OCC::FileSystem::isFileLocked(documentPath, OCC::FileSystem::LockMode::Exclusive)) {
 +        return true;
++    }
++    if (!levelLibreOfficeRunning()) {
++        return false;
 +    }
 +    const QFileInfo documentInfo(documentPath);
 +    const auto dir = documentInfo.dir();
@@ -54,7 +89,7 @@ index bbf44d4938..f95ebe96fc 100644
  }
  
  namespace OCC {
-@@ -122,6 +154,16 @@ Folder::Folder(const FolderDefinition &definition,
+@@ -122,6 +189,20 @@ Folder::Folder(const FolderDefinition &definition,
      connect(&_scheduleSelfTimer, &QTimer::timeout,
          this, &Folder::slotScheduleThisFolder);
  
@@ -67,11 +102,15 @@ index bbf44d4938..f95ebe96fc 100644
 +    _levelAutoLockSweepTimer.setInterval(levelAutoLockSweepIntervalMs);
 +    connect(&_levelAutoLockSweepTimer, &QTimer::timeout, this, &Folder::levelSweepAutoLocks);
 +    _levelAutoLockSweepTimer.start();
++    connect(_engine.data(), &SyncEngine::itemDiscovered, this, &Folder::levelTrackForeignLock);
++    connect(_engine.data(), &SyncEngine::itemCompleted, this, [this](const SyncFileItemPtr &item, const ErrorCategory) {
++        levelTrackForeignLock(item);
++    });
 +
      connect(ProgressDispatcher::instance(), &ProgressDispatcher::folderConflicts,
          this, &Folder::slotFolderConflicts);
  
-@@ -810,6 +852,54 @@ void Folder::slotFilesLockReleased(const QSet<QString> &files)
+@@ -810,6 +891,112 @@ void Folder::slotFilesLockReleased(const QSet<QString> &files)
      }
  }
  
@@ -85,9 +124,67 @@ index bbf44d4938..f95ebe96fc 100644
 +    }
 +}
 +
++void Folder::levelTrackForeignLock(const SyncFileItemPtr &item)
++{
++    if (!item || item->isDirectory()) {
++        return;
++    }
++    const auto lockedByOther = item->_locked == SyncFileItem::LockStatus::LockedItem && item->_lockOwnerId != _accountState->account()->davUser();
++    if (lockedByOther) {
++        _levelForeignLocks.insert(item->_file);
++    } else {
++        _levelForeignLocks.remove(item->_file);
++    }
++}
++
++void Folder::levelRefreshForeignLocks()
++{
++    const auto davUser = _accountState->account()->davUser();
++    if (!_levelForeignLocksSeeded) {
++        // locks recorded before this run (e.g. before a restart) are not rediscovered on their own
++        _levelForeignLocksSeeded = true;
++        const auto ok = _journal.getFilesBelowPath(QByteArray{}, [this, &davUser](const SyncJournalFileRecord &rec) {
++            if (rec.isFile() && rec._lockstate._locked && rec._lockstate._lockOwnerId != davUser) {
++                _levelForeignLocks.insert(rec.path());
++            }
++        });
++        if (!ok) {
++            qCWarning(lcFolder) << "Level: could not read the locks recorded in the journal";
++        }
++    }
++
++    const auto now = QDateTime::currentSecsSinceEpoch();
++    if (_levelForeignLocks.isEmpty() || now - _levelForeignLocksLastRefresh < levelForeignLockRefreshSecs || isBusy()) {
++        return;
++    }
++    _levelForeignLocksLastRefresh = now;
++
++    auto scheduled = false;
++    for (auto it = _levelForeignLocks.begin(); it != _levelForeignLocks.end();) {
++        SyncJournalFileRecord rec;
++        const auto stillLockedByOther = _journal.getFileRecord(*it, &rec) && rec.isValid() && rec._lockstate._locked && rec._lockstate._lockOwnerId != davUser;
++        if (!stillLockedByOther) {
++            it = _levelForeignLocks.erase(it);
++            continue;
++        }
++        // a lock can go away on the server without a new etag; ask the server about this folder again
++        _journal.schedulePathForRemoteDiscovery(*it);
++        scheduled = true;
++        ++it;
++    }
++    if (scheduled) {
++        qCInfo(lcFolder) << "Level: refreshing the lock state of" << _levelForeignLocks.size() << "file(s) locked by others";
++        scheduleThisFolderSoon();
++    }
++}
++
 +void Folder::levelSweepAutoLocks()
 +{
-+    if (_levelAutoLocks.isEmpty() || !_accountState->isConnected()) {
++    if (!_accountState->isConnected()) {
++        return;
++    }
++    levelRefreshForeignLocks();
++    if (_levelAutoLocks.isEmpty()) {
 +        return;
 +    }
 +
@@ -126,7 +223,7 @@ index bbf44d4938..f95ebe96fc 100644
  void Folder::slotFilesLockImposed(const QSet<QString> &files)
  {
      qCDebug(lcFolder) << "Lock files detected for office files" << files;
-@@ -841,6 +931,9 @@ void Folder::slotLockedFilesFound(const QSet<QString> &files)
+@@ -841,17 +1028,23 @@ void Folder::slotLockedFilesFound(const QSet<QString> &files)
  
          const QString remoteFilePath = remotePathTrailingSlash() + rec.path();
          qCDebug(lcFolder) << "Automatically locking file on server" << remoteFilePath;
@@ -136,11 +233,30 @@ index bbf44d4938..f95ebe96fc 100644
          _fileLockSuccess = connect(_accountState->account().data(), &Account::lockFileSuccess, this, [this, remoteFilePath] {
              disconnect(_fileLockSuccess);
              disconnect(_fileLockFailure);
+             qCDebug(lcFolder) << "Locking file succeeded" << remoteFilePath;
+             startSync();
+         });
+-        _fileLockFailure = connect(_accountState->account().data(), &Account::lockFileError, this, [this, remoteFilePath](const QString &message) {
+-            disconnect(_fileLockSuccess);
+-            disconnect(_fileLockFailure);
+-            qCWarning(lcFolder) << "Failed to lock a file:" << remoteFilePath << message;
+-        });
++        _fileLockFailure =
++            connect(_accountState->account().data(), &Account::lockFileError, this, [this, remoteFilePath, recordPath = rec.path()](const QString &message) {
++                disconnect(_fileLockSuccess);
++                disconnect(_fileLockFailure);
++                qCWarning(lcFolder) << "Failed to lock a file:" << remoteFilePath << message;
++                // Level (patch 0018): probably locked by someone else; keep its lock state fresh
++                _levelForeignLocks.insert(recordPath);
++            });
+         _accountState->account()->setLockFileState(remoteFilePath,
+                                                    remotePathTrailingSlash(),
+                                                    path(),
 diff --git a/src/gui/folder.h b/src/gui/folder.h
-index a7ffa206b7..ea0b71bd58 100644
+index a7ffa20..5542628 100644
 --- a/src/gui/folder.h
 +++ b/src/gui/folder.h
-@@ -663,6 +663,13 @@ private:
+@@ -663,6 +663,21 @@ private:
      QMetaObject::Connection _fileLockSuccess;
      QMetaObject::Connection _fileLockFailure;
  
@@ -150,6 +266,14 @@ index a7ffa206b7..ea0b71bd58 100644
 +    void levelSaveAutoLocks() const;
 +    QSet<QString> _levelAutoLocks;
 +    QTimer _levelAutoLockSweepTimer;
++    // Files the journal records as locked by someone else; their folders are asked again
++    // periodically, because a lock can disappear on the server without a new etag.
++    void levelTrackForeignLock(const SyncFileItemPtr &item);
++    void levelRefreshForeignLocks();
++    QSet<QString> _levelForeignLocks;
++    bool _levelForeignLocksSeeded = false;
++    qint64 _levelForeignLocksLastRefresh = 0;
++
 +
      /// The remote file ID of the current folder.
      qint64 _rootFileId = 0;
